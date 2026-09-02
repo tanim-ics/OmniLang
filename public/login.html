@@ -161,6 +161,9 @@
                             <i class="fa-solid fa-eye"></i>
                         </button>
                     </div>
+                    <div style="text-align:right;margin-top:0.4rem;">
+                        <button type="button" id="btnForgotPassword" style="background:none;border:none;color:var(--accent-cyan);font-size:0.78rem;cursor:pointer;font-weight:600;">Forgot password?</button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-primary" id="btnSubmitSignIn" style="justify-content:center;padding:0.85rem;font-size:0.95rem;margin-top:0.35rem;">
@@ -247,6 +250,72 @@
                 </div>
             </div>
         </div><!-- /sectionAuth -->
+
+        <!-- ================================================================ -->
+        <!-- SECTION FP: FORGOT PASSWORD                                       -->
+        <!-- ================================================================ -->
+        <div id="sectionForgot" style="display:none;">
+
+            <!-- Step FP-1: Enter email -->
+            <div id="fpStep1">
+                <div style="text-align:center;margin-bottom:1.25rem;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;">🔑</div>
+                    <h2 style="font-size:1.2rem;font-weight:800;color:var(--text-main);margin:0 0 0.4rem;">Reset your password</h2>
+                    <p style="font-size:0.85rem;color:var(--text-secondary);margin:0;">Enter the email address linked to your account.<br>We'll send you a 6-digit reset code.</p>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:0.4rem;">Email Address</label>
+                    <input type="email" id="fpEmail" class="select-control-input" placeholder="you@domain.com" autocomplete="email">
+                </div>
+                <button type="button" class="btn-primary" id="btnSendReset" style="width:100%;justify-content:center;padding:0.85rem;font-size:0.95rem;">
+                    <span>Send Reset Code</span> <i class="fa-solid fa-paper-plane"></i>
+                </button>
+                <div style="text-align:center;margin-top:1rem;">
+                    <button type="button" id="btnBackFromForgot" style="background:none;border:none;color:var(--text-muted);font-size:0.78rem;cursor:pointer;">← Back to sign in</button>
+                </div>
+            </div>
+
+            <!-- Step FP-2: Enter OTP + new password -->
+            <div id="fpStep2" style="display:none;">
+                <div style="text-align:center;margin-bottom:1.25rem;">
+                    <div style="font-size:2rem;margin-bottom:0.5rem;">📬 → 🔒</div>
+                    <h2 style="font-size:1.15rem;font-weight:800;color:var(--text-main);margin:0 0 0.4rem;">Enter code &amp; new password</h2>
+                    <p style="font-size:0.82rem;color:var(--text-secondary);margin:0;">Check <strong id="fpEmailDisplay">your email</strong> (or server console).</p>
+                </div>
+
+                <div class="otp-digit-row" id="fpOtpRow">
+                    <input type="text" maxlength="1" class="fp-otp-digit" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                    <input type="text" maxlength="1" class="fp-otp-digit" inputmode="numeric" pattern="[0-9]">
+                    <input type="text" maxlength="1" class="fp-otp-digit" inputmode="numeric" pattern="[0-9]">
+                    <input type="text" maxlength="1" class="fp-otp-digit" inputmode="numeric" pattern="[0-9]">
+                    <input type="text" maxlength="1" class="fp-otp-digit" inputmode="numeric" pattern="[0-9]">
+                    <input type="text" maxlength="1" class="fp-otp-digit" inputmode="numeric" pattern="[0-9]">
+                </div>
+
+                <div style="margin-bottom:0.85rem;">
+                    <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:0.4rem;">New Password</label>
+                    <div class="password-input-wrap">
+                        <i class="fa-solid fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;"></i>
+                        <input type="password" id="fpNewPassword" class="select-control-input" placeholder="Min 8 chars, 1 uppercase, 1 special" style="padding-left:2.4rem;padding-right:2.4rem;" autocomplete="new-password">
+                        <button type="button" class="password-toggle-btn" data-target="fpNewPassword" title="Toggle">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="pw-strength-bar"><div class="pw-strength-fill" id="fpPwStrengthFill"></div></div>
+                </div>
+
+                <button type="button" class="btn-primary" id="btnConfirmReset" style="width:100%;justify-content:center;padding:0.85rem;font-size:0.95rem;">
+                    <span>Set New Password</span> <i class="fa-solid fa-key"></i>
+                </button>
+                <div class="resend-row" style="margin-top:0.75rem;">
+                    <span id="fpResendTimerMsg">Resend code in <strong id="fpResendTimer">60</strong>s</span>
+                    <button type="button" class="resend-btn" id="btnFpResend" style="display:none;">Resend Code</button>
+                </div>
+                <div style="text-align:center;margin-top:0.75rem;">
+                    <button type="button" id="btnBackToFpStep1" style="background:none;border:none;color:var(--text-muted);font-size:0.78rem;cursor:pointer;">← Change email</button>
+                </div>
+            </div>
+        </div><!-- /sectionForgot -->
 
         <!-- ================================================================ -->
         <!-- SECTION B: EMAIL OTP VERIFICATION                                -->
@@ -930,6 +999,169 @@
                 pendingNick = (data.nickname || name || 'Learner').replace(/^@/, '');
                 launchOnboarding(data);
             } catch (err) { showAlert(err.message); }
+        });
+
+        // ================================================================
+        // FORGOT PASSWORD FLOW
+        // ================================================================
+
+        // Override showSection to also hide sectionForgot
+        const _origShowSection = showSection;
+        function showSection(id) {
+            ['sectionAuth','sectionOtp','sectionOnboarding','sectionForgot'].forEach(s => {
+                document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+            });
+            hideAlert();
+        }
+
+        let fpEmail = '';
+        let fpResendInterval = null;
+
+        // Forgot password link
+        document.getElementById('btnForgotPassword').addEventListener('click', () => {
+            showSection('sectionForgot');
+            document.getElementById('fpStep1').style.display = 'block';
+            document.getElementById('fpStep2').style.display = 'none';
+        });
+        document.getElementById('btnBackFromForgot').addEventListener('click', () => showSection('sectionAuth'));
+        document.getElementById('btnBackToFpStep1').addEventListener('click', () => {
+            document.getElementById('fpStep1').style.display = 'block';
+            document.getElementById('fpStep2').style.display = 'none';
+        });
+
+        // Step 1 — Send reset code
+        document.getElementById('btnSendReset').addEventListener('click', async () => {
+            const email = document.getElementById('fpEmail').value.trim();
+            if (!validateEmail(email)) return showAlert('Please enter a valid email address.');
+            hideAlert();
+            const btn = document.getElementById('btnSendReset');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim"></i> Sending…';
+
+            try {
+                const res  = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                fpEmail = email;
+                document.getElementById('fpEmailDisplay').textContent = email;
+                document.getElementById('fpStep1').style.display = 'none';
+                document.getElementById('fpStep2').style.display = 'block';
+                startFpResendTimer();
+                // Focus first digit
+                document.querySelectorAll('.fp-otp-digit')[0]?.focus();
+                showAlert(data.message || 'Reset code sent! Check your email or server console.', false);
+            } catch (err) {
+                showAlert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Send Reset Code</span> <i class="fa-solid fa-paper-plane"></i>';
+            }
+        });
+
+        // FP OTP digit handling
+        const fpOtpDigits = document.querySelectorAll('.fp-otp-digit');
+        fpOtpDigits.forEach((input, i) => {
+            input.addEventListener('input', () => {
+                input.value = input.value.replace(/\D/g, '').slice(0,1);
+                if (input.value) {
+                    input.classList.add('filled');
+                    if (i < 5) fpOtpDigits[i+1].focus();
+                } else input.classList.remove('filled');
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !input.value && i > 0) {
+                    fpOtpDigits[i-1].value = '';
+                    fpOtpDigits[i-1].classList.remove('filled');
+                    fpOtpDigits[i-1].focus();
+                }
+            });
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+                paste.split('').forEach((ch, idx) => {
+                    if (fpOtpDigits[idx]) { fpOtpDigits[idx].value = ch; fpOtpDigits[idx].classList.add('filled'); }
+                });
+                fpOtpDigits[Math.min(paste.length, 5)].focus();
+            });
+        });
+
+        // FP password strength meter
+        document.getElementById('fpNewPassword').addEventListener('input', () => {
+            const v = validatePassword(document.getElementById('fpNewPassword').value);
+            const score = [v.length, v.upper, v.special].filter(Boolean).length;
+            const fill = document.getElementById('fpPwStrengthFill');
+            fill.style.width = (score / 3 * 100) + '%';
+            fill.style.background = score === 3 ? '#10b981' : score === 2 ? '#f59e0b' : '#f43f5e';
+        });
+
+        // Step 2 — Confirm reset
+        document.getElementById('btnConfirmReset').addEventListener('click', async () => {
+            const otp = Array.from(fpOtpDigits).map(d => d.value).join('');
+            if (otp.length !== 6) return showAlert('Please enter all 6 digits of your reset code.');
+            const newPassword = document.getElementById('fpNewPassword').value;
+            const pwv = validatePassword(newPassword);
+            if (!pwv.length) return showAlert('Password must be at least 8 characters.');
+            if (!pwv.upper) return showAlert('Password must contain at least one uppercase letter.');
+            if (!pwv.special) return showAlert('Password must contain at least one special character.');
+            hideAlert();
+
+            const btn = document.getElementById('btnConfirmReset');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim"></i> Updating…';
+
+            try {
+                const res  = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: fpEmail, otp, newPassword })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                clearInterval(fpResendInterval);
+                showAlert('✅ Password updated! You can now sign in with your new password.', false);
+                setTimeout(() => showSection('sectionAuth'), 2500);
+            } catch (err) {
+                showAlert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Set New Password</span> <i class="fa-solid fa-key"></i>';
+            }
+        });
+
+        // FP resend
+        function startFpResendTimer(seconds = 60) {
+            clearInterval(fpResendInterval);
+            let remaining = seconds;
+            const timerEl = document.getElementById('fpResendTimer');
+            const timerMsg = document.getElementById('fpResendTimerMsg');
+            const resendBtn = document.getElementById('btnFpResend');
+            timerMsg.style.display = 'inline'; resendBtn.style.display = 'none';
+            timerEl.textContent = remaining;
+            fpResendInterval = setInterval(() => {
+                remaining--;
+                timerEl.textContent = remaining;
+                if (remaining <= 0) { clearInterval(fpResendInterval); timerMsg.style.display = 'none'; resendBtn.style.display = 'inline'; }
+            }, 1000);
+        }
+
+        document.getElementById('btnFpResend').addEventListener('click', async () => {
+            if (!fpEmail) return;
+            const btn = document.getElementById('btnFpResend');
+            btn.disabled = true;
+            try {
+                await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: fpEmail })
+                });
+                showAlert('New reset code sent!', false);
+                startFpResendTimer(60);
+            } finally { btn.disabled = false; }
         });
     </script>
 </body>

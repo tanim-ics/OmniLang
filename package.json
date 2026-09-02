@@ -9,6 +9,8 @@
     "dev": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" nodemon src/server.js",
     "setup": "bash setup.sh",
     "doctor": "node scripts/setup.js",
+    "admin": "node scripts/admin.mjs",
+    "test": "node tests/test_forgot_admin.mjs",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },

@@ -96,8 +96,40 @@ If you prefer manual control:
 | `npm run doctor` | Runs the system health & environment diagnostics check |
 | `npm start` | Boots OmniLang with GPU VRAM pre-warming |
 | `npm run dev` | Boots OmniLang in development mode with nodemon hot-reloading |
+| `npm run admin -- list` | Lists all user accounts with status, XP, level, model |
+| `npm run admin -- delete <user>` | Permanently deletes a user and cascades vocab & chat history |
+| `npm test` | Runs the automated auth, reset password & admin test suite |
 | `npm run docker:up` | Starts MongoDB and OmniLang in Docker background containers |
 | `npm run docker:down` | Stops all Docker containers |
+
+---
+
+## 🛠️ Developer User Management CLI
+
+As a developer, you can inspect, verify, reset, or remove any user account directly from the terminal without accessing MongoDB shell manually:
+
+```bash
+# List all registered users with details
+npm run admin -- list
+
+# Find full profile of a specific user (by handle, email, or userId)
+npm run admin -- find @tanim
+npm run admin -- find user@example.com
+
+# Permanently delete a user account and wipe their data (vocabulary, chats)
+npm run admin -- delete @baduser
+npm run admin -- delete user@example.com
+
+# Force-verify an email account directly (skips OTP)
+npm run admin -- verify @tanim
+
+# Force-reset a user's password directly
+npm run admin -- setpw @tanim NewSecret@1234
+
+# Grant bonus XP to a user
+npm run admin -- grantxp @tanim 500
+```
+
 
 ---
 

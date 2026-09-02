@@ -14,6 +14,7 @@ import readingRouter    from './routes/reading.js';
 import essayRouter      from './routes/essay.js';
 import coachRouter      from './routes/coach.js';
 import settingsRouter   from './routes/settings.js';
+import adminRouter      from './routes/admin.js';
 import { ensureOllamaRunning, preloadModel } from './utils/ollamaManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,6 +38,7 @@ app.use('/api/reading',    readingRouter);
 app.use('/api/essay',      essayRouter);
 app.use('/api/coach',      coachRouter);
 app.use('/api/settings',   settingsRouter);
+app.use('/api/admin',      adminRouter);
 
 app.get('/api/health', (_req, res) => {
     res.json({

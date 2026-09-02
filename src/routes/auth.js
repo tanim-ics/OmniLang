@@ -4,9 +4,16 @@ import User from '../models/User.js';
 import Vocabulary from '../models/Vocabulary.js';
 
 // ---- OTP email sender (nodemailer when SMTP configured; console fallback for local dev) ----
-async function sendOtpEmail(toEmail, otp, nickname) {
+async function sendOtpEmail(toEmail, otp, nickname, purpose = 'verification') {
+    const isReset  = purpose === 'password reset';
+    const subject  = isReset ? 'OmniLang — Password Reset Code' : 'OmniLang — Email Verification Code';
+    const headline = isReset ? '🔑 Reset your password' : '✅ Verify your email';
+    const body     = isReset
+        ? 'You requested a password reset. Enter this code to set a new password:'
+        : 'Thanks for signing up! Enter this code to activate your account:';
+
     const smtpHost = process.env.SMTP_HOST;
-    if (smtpHost) {
+    if (smtpHost && process.env.SMTP_USER && process.env.SMTP_PASS) {
         try {
             const nodemailer = await import('nodemailer');
             const transporter = nodemailer.createTransport({
@@ -18,12 +25,13 @@ async function sendOtpEmail(toEmail, otp, nickname) {
             await transporter.sendMail({
                 from: process.env.SMTP_FROM || process.env.SMTP_USER,
                 to: toEmail,
-                subject: 'Your OmniLang Verification Code',
+                subject,
                 html: `
                     <div style="font-family:sans-serif;max-width:460px;margin:auto;padding:2rem;background:#0b0f19;color:#f8fafc;border-radius:16px;">
                         <h2 style="color:#6366f1;">🌐 OmniLang</h2>
+                        <h3 style="color:#f8fafc;">${headline}</h3>
                         <p>Hi <strong>@${nickname}</strong>,</p>
-                        <p>Your one-time verification code is:</p>
+                        <p>${body}</p>
                         <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.4rem;color:#06b6d4;padding:1rem 0;">${otp}</div>
                         <p style="color:#94a3b8;">This code expires in <strong>15 minutes</strong>. Do not share it with anyone.</p>
                     </div>`
@@ -34,8 +42,9 @@ async function sendOtpEmail(toEmail, otp, nickname) {
         }
     }
     // Local dev fallback — print to console
+    const label = isReset ? 'PASSWORD RESET CODE' : 'OTP CODE';
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`📧  OTP CODE for ${toEmail} (@${nickname}): ${otp}`);
+    console.log(`📧  ${label} for ${toEmail} (@${nickname}): ${otp}`);
     console.log(`${'='.repeat(60)}\n`);
     return true;
 }
@@ -450,6 +459,75 @@ router.post('/resend-otp', async (req, res) => {
     } catch (err) {
         console.error('[auth] Resend OTP error:', err.message);
         res.status(500).json({ error: 'Could not resend code: ' + err.message });
+    }
+});
+
+// POST /api/auth/forgot-password — Send password reset OTP
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email || !email.trim()) return res.status(400).json({ error: 'Email address is required' });
+        const cleanEmail = email.trim().toLowerCase();
+
+        const user = await User.findOne({ email: cleanEmail });
+        // Always return success to prevent email enumeration
+        if (!user) {
+            return res.json({ success: true, message: 'If that email exists, a reset code has been sent.' });
+        }
+        if (user.authProvider !== 'local') {
+            return res.status(400).json({ error: `This account uses ${user.authProvider} sign-in. Password reset is not applicable.` });
+        }
+
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        user.passwordResetCode    = otp;
+        user.passwordResetExpiry  = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+        await user.save();
+
+        await sendOtpEmail(cleanEmail, otp, user.nickname || user.username, 'password reset');
+
+        res.json({ success: true, message: 'If that email exists, a reset code has been sent.' });
+    } catch (err) {
+        console.error('[auth] Forgot password error:', err.message);
+        res.status(500).json({ error: 'Could not send reset code: ' + err.message });
+    }
+});
+
+// POST /api/auth/reset-password — Verify reset OTP and set new password
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ error: 'email, otp, and newPassword are required' });
+        }
+
+        // Password policy
+        if (newPassword.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        if (!/[A-Z]/.test(newPassword)) return res.status(400).json({ error: 'Password must contain at least one uppercase letter' });
+        if (!/[^A-Za-z0-9]/.test(newPassword)) return res.status(400).json({ error: 'Password must contain at least one special character' });
+
+        const user = await User.findOne({ email: email.trim().toLowerCase() })
+            .select('+passwordResetCode +passwordResetExpiry');
+        if (!user) return res.status(404).json({ error: 'Account not found' });
+
+        if (!user.passwordResetCode || user.passwordResetCode !== String(otp).trim()) {
+            return res.status(400).json({ error: 'Invalid reset code. Please try again.' });
+        }
+        if (!user.passwordResetExpiry || new Date() > user.passwordResetExpiry) {
+            return res.status(400).json({ error: 'Reset code has expired. Please request a new one.' });
+        }
+
+        const { hash, salt } = hashPassword(newPassword);
+        user.passwordHash        = hash;
+        user.passwordSalt        = salt;
+        user.passwordResetCode   = undefined;
+        user.passwordResetExpiry = undefined;
+        user.isVerified          = true; // Reset also verifies the account
+        await user.save();
+
+        res.json({ success: true, message: 'Password updated successfully. You can now sign in.' });
+    } catch (err) {
+        console.error('[auth] Reset password error:', err.message);
+        res.status(500).json({ error: 'Password reset failed: ' + err.message });
     }
 });
 

@@ -71,6 +71,9 @@ const userSchema = new mongoose.Schema({
     isVerified:          { type: Boolean, default: false },
     verificationCode:    { type: String, select: false },
     verificationExpiry:  { type: Date, select: false },
+    // Password reset
+    passwordResetCode:   { type: String, select: false },
+    passwordResetExpiry: { type: Date, select: false },
     currentLevel: {
         type: String,
         enum: ['A1', 'A2', 'B1', 'B2', 'C1'],
