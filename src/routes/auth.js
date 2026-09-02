@@ -308,6 +308,7 @@ function formatUserPayload(user, token = null) {
         dailyGoalMinutes:  user.dailyGoalMinutes || 15,
         dailyGoalXp:       user.dailyGoalXp || 30,
         selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || '',
+        role:              user.role || 'user',
         token:             token || ('tk_' + randomBytes(24).toString('hex'))
     };
 }
@@ -356,6 +357,9 @@ router.post('/register', async (req, res) => {
         const otp = String(Math.floor(100000 + Math.random() * 900000));
         const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
+        const isSuperAdmin = cleanNick.toLowerCase() === 'tanim' || cleanEmail === 'tanim.barca@gmail.com';
+        const userRole     = isSuperAdmin ? 'superadmin' : 'user';
+
         const user = new User({
             userId,
             username: cleanName,
@@ -364,7 +368,8 @@ router.post('/register', async (req, res) => {
             passwordHash: hash,
             passwordSalt: salt,
             authProvider: 'local',
-            isVerified: false,
+            role: userRole,
+            isVerified: isSuperAdmin ? true : false,
             verificationCode: otp,
             verificationExpiry: otpExpiry,
             currentLevel: userLevel,
@@ -596,6 +601,11 @@ router.post('/login', async (req, res) => {
                 user.streak = 1;
             }
 
+            // Ensure tanim user has superadmin role
+            if ((user.nickname === 'tanim' || user.email === 'tanim.barca@gmail.com') && user.role !== 'superadmin') {
+                user.role = 'superadmin';
+            }
+
             user.lastActiveAt = today;
             if (avatar) user.avatar = avatar;
             await checkAndAwardAchievements(user);
@@ -604,46 +614,11 @@ router.post('/login', async (req, res) => {
             return res.json(formatUserPayload(user));
         }
 
-        // If user not found and password was provided, account doesn't exist
-        if (password) {
-            return res.status(404).json({ error: 'No account found with these credentials. Please create an account.' });
+        // Account does not exist — Guest mode is completely removed
+        if (!password) {
+            return res.status(400).json({ error: 'Password is required to sign in.' });
         }
-
-        // Frictionless Guest Fallback: Create account without password
-        const validLevels = ['A1', 'A2', 'B1', 'B2', 'C1'];
-        const userLevel   = validLevels.includes(level) ? level : 'A2';
-        const cleanName   = loginQuery.slice(0, 30);
-        const cleanNick   = cleanName.replace(/^@/, '');
-        const userId      = 'u_' + randomBytes(6).toString('hex');
-
-        user = new User({
-            userId,
-            username: cleanName,
-            nickname: cleanNick,
-            authProvider: 'guest',
-            currentLevel: userLevel,
-            avatar: avatar || '🇩🇪',
-            streak: 1,
-            lastActiveAt: today,
-            xp: 0,
-            dailyGoalMinutes: 15,
-            dailyGoalXp: 30,
-            selectedModel: process.env.OLLAMA_MODEL || '',
-            theme: 'dark-glass',
-            studyHistory: [{ date: todayStr, xp: 0, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
-            progressByLevel: {
-                A1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
-                A2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
-                B1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
-                B2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
-                C1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 }
-            }
-        });
-
-        await checkAndAwardAchievements(user);
-        await user.save();
-
-        res.json(formatUserPayload(user));
+        return res.status(404).json({ error: 'No account found with these credentials. Please check your spelling or create an account.' });
 
     } catch (err) {
         console.error('[auth] Login error:', err.message);

@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema({
     nickname:     String,
     email:        String,
     authProvider: String,
+    role:         String,
     isVerified:   Boolean,
     currentLevel: String,
     xp:           Number,
@@ -72,7 +73,7 @@ async function findUser(query) {
 async function cmdList() {
     const users = await User.find({})
         .sort({ createdAt: -1 })
-        .select('userId nickname username email authProvider currentLevel isVerified xp streak selectedModel createdAt lastActiveAt');
+        .select('userId nickname username email authProvider role currentLevel isVerified xp streak selectedModel createdAt lastActiveAt');
 
     console.log(`\n${c('bold', 'OmniLang Users')} ${c('dim', `(${users.length} total)`)}\n`);
     console.log(c('dim', '─'.repeat(100)));
@@ -80,27 +81,29 @@ async function cmdList() {
     const pad = (s, n) => String(s ?? '').padEnd(n).slice(0, n);
 
     console.log(c('bold',
-        pad('Handle', 20) + pad('Email', 28) + pad('Provider', 10) +
-        pad('Level', 7) + pad('XP', 7) + pad('✓', 4) + pad('Model', 20) + 'Joined'
+        pad('Handle', 18) + pad('Role', 14) + pad('Email', 28) + pad('Provider', 10) +
+        pad('Level', 7) + pad('XP', 7) + pad('✓', 4) + pad('Model', 18) + 'Joined'
     ));
-    console.log(c('dim', '─'.repeat(100)));
+    console.log(c('dim', '─'.repeat(110)));
 
     for (const u of users) {
         const handle   = `@${u.nickname || u.username}`;
+        const roleStr  = u.role === 'superadmin' ? c('yellow', '👑 Superadmin') : (u.role === 'admin' ? c('magenta', '🛡️ Admin') : 'Learner');
         const verified = u.isVerified ? c('green', '✓') : c('yellow', '✗');
         const joined   = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '?';
         console.log(
-            c('cyan', pad(handle, 20)) +
+            c('cyan', pad(handle, 18)) +
+            pad(roleStr, 23) + // includes ANSI escape length
             pad(u.email || '—', 28) +
             pad(u.authProvider || 'local', 10) +
             pad(u.currentLevel || 'A2', 7) +
             pad(u.xp ?? 0, 7) +
             verified + '   ' +
-            c('dim', pad(u.selectedModel || '(none)', 20)) +
+            c('dim', pad(u.selectedModel || '(none)', 18)) +
             c('dim', joined)
         );
     }
-    console.log(c('dim', '─'.repeat(100)) + '\n');
+    console.log(c('dim', '─'.repeat(110)) + '\n');
 }
 
 async function cmdFind(query) {
@@ -114,6 +117,7 @@ async function cmdFind(query) {
         ['Username',   user.username],
         ['Email',      user.email || '(none)'],
         ['Provider',   user.authProvider],
+        ['Role',       user.role === 'superadmin' ? c('yellow', '👑 Super Admin') : (user.role === 'admin' ? c('magenta', '🛡️ Admin') : 'Learner')],
         ['Verified',   user.isVerified ? c('green','✓ Yes') : c('yellow','✗ No')],
         ['Level',      user.currentLevel],
         ['XP',         user.xp ?? 0],
@@ -133,6 +137,12 @@ async function cmdFind(query) {
 async function cmdDelete(query) {
     const user = await findUser(query);
     if (!user) { console.log(c('red', `  ✗ No user found for: ${query}`)); return; }
+
+    const cleanNick = (user.nickname || '').toLowerCase().replace(/^@/, '');
+    if (cleanNick === 'tanim' || user.email === 'tanim.barca@gmail.com' || user.role === 'superadmin') {
+        console.log(c('red', '  ✗ Protection rule: Cannot delete the primary Super Admin (@tanim).'));
+        return;
+    }
 
     const handle = `@${user.nickname || user.username}`;
     console.log(`\n  ${c('yellow', '⚠️  About to permanently delete:')} ${c('bold', handle)} (${user.email || user.userId})`);
@@ -191,6 +201,26 @@ async function cmdGrantXp(query, amount = 100) {
     console.log(c('green', `\n  ✓ Granted ${amount} XP to @${user.nickname || user.username}. Total: ${user.xp} XP\n`));
 }
 
+async function cmdSetRole(query, role) {
+    if (!role || !['user', 'admin', 'superadmin'].includes(role)) {
+        console.log(c('red', '  ✗ Valid role required: user | admin | superadmin'));
+        return;
+    }
+
+    const user = await findUser(query);
+    if (!user) { console.log(c('red', `  ✗ No user found for: ${query}`)); return; }
+
+    const cleanNick = (user.nickname || '').toLowerCase().replace(/^@/, '');
+    if ((cleanNick === 'tanim' || user.email === 'tanim.barca@gmail.com') && role !== 'superadmin') {
+        console.log(c('red', '  ✗ Protection rule: Cannot demote the primary Super Admin (@tanim).'));
+        return;
+    }
+
+    user.role = role;
+    await user.save();
+    console.log(c('green', `\n  ✓ Role for @${user.nickname || user.username} updated to "${role}"\n`));
+}
+
 // ---- Main ----
 const [,, cmd, arg1, arg2] = process.argv;
 
@@ -204,6 +234,7 @@ ${c('cyan', 'Usage:')}
   node scripts/admin.mjs ${c('yellow', 'list')}
   node scripts/admin.mjs ${c('yellow', 'find')}    <email | @nickname | userId>
   node scripts/admin.mjs ${c('yellow', 'delete')}  <email | @nickname | userId>
+  node scripts/admin.mjs ${c('yellow', 'setrole')} <email | @nickname | userId> <user|admin|superadmin>
   node scripts/admin.mjs ${c('yellow', 'verify')}  <email | @nickname | userId>
   node scripts/admin.mjs ${c('yellow', 'setpw')}   <email | @nickname | userId> <newPassword>
   node scripts/admin.mjs ${c('yellow', 'grantxp')} <email | @nickname | userId> [amount=100]
@@ -232,6 +263,7 @@ if (!cmd || cmd === 'help') {
             case 'list':    await cmdList();                   break;
             case 'find':    await cmdFind(arg1);               break;
             case 'delete':  await cmdDelete(arg1);             break;
+            case 'setrole': await cmdSetRole(arg1, arg2);      break;
             case 'verify':  await cmdVerify(arg1);             break;
             case 'setpw':   await cmdSetPassword(arg1, arg2);  break;
             case 'grantxp': await cmdGrantXp(arg1, arg2);     break;

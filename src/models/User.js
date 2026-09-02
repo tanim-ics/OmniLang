@@ -66,7 +66,8 @@ const userSchema = new mongoose.Schema({
     email:        { type: String, trim: true, lowercase: true, sparse: true, index: true },
     passwordHash: { type: String, select: false },
     passwordSalt: { type: String, select: false },
-    authProvider: { type: String, enum: ['local', 'google', 'apple', 'guest'], default: 'local' },
+    authProvider: { type: String, enum: ['local', 'google', 'apple'], default: 'local' },
+    role:         { type: String, enum: ['user', 'admin', 'superadmin'], default: 'user', index: true },
     // Email verification
     isVerified:          { type: Boolean, default: false },
     verificationCode:    { type: String, select: false },

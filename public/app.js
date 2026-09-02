@@ -86,6 +86,19 @@ function updateNavState() {
 
     const chatLevel = document.getElementById('chatLevelIndicator');
     if (chatLevel) chatLevel.textContent = currentLevel;
+
+    // SaaS Admin Portal visibility (Admins & Super Admins only)
+    const isAdmin = auth.role === 'admin' || auth.role === 'superadmin';
+    const navAdmin = document.getElementById('navAdminChip');
+    const dropdownAdmin = document.getElementById('dropdownAdminLink');
+    if (navAdmin) {
+        navAdmin.style.display = isAdmin ? 'inline-flex' : 'none';
+        const label = document.getElementById('navAdminLabel');
+        if (label) label.textContent = auth.role === 'superadmin' ? 'Super Admin' : 'Admin Panel';
+    }
+    if (dropdownAdmin) {
+        dropdownAdmin.style.display = isAdmin ? 'flex' : 'none';
+    }
 }
 updateNavState();
 

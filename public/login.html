@@ -239,14 +239,11 @@
                 </button>
             </form>
 
-            <!-- Quick Demo Guest Link -->
+            <!-- Security footer -->
             <div style="text-align:center;margin-top:1.5rem;display:flex;flex-direction:column;gap:0.65rem;align-items:center;">
-                <button type="button" id="btnGuestLogin" style="background:none;border:none;color:var(--text-muted);font-size:0.8rem;cursor:pointer;text-decoration:underline;">
-                    ⚡ Or continue instantly as Guest
-                </button>
                 <div style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:0.4rem;">
                     <i class="fa-solid fa-shield-halved" style="color:var(--accent-emerald);"></i>
-                    <span>Cryptographically secured · Local Ollama</span>
+                    <span>Cryptographically secured · Local Ollama · Private</span>
                 </div>
             </div>
         </div><!-- /sectionAuth -->
@@ -931,23 +928,7 @@
             window.location.href = 'dashboard.html';
         });
 
-        // ================================================================
-        // GUEST LOGIN
-        // ================================================================
-        document.getElementById('btnGuestLogin').addEventListener('click', async () => {
-            hideAlert();
-            try {
-                const res  = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: 'Gast-Lerner', level: 'A2', avatar: '🇩🇪' })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Guest login failed');
-                localStorage.setItem('tanim_auth', JSON.stringify(data));
-                window.location.href = 'dashboard.html';
-            } catch (err) { showAlert(err.message); }
-        });
+
 
         // ================================================================
         // SOCIAL LOGINS (Google & Apple ID)

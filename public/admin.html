@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark-glass">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniLang — SaaS Administration Platform</title>
+    <meta name="description" content="OmniLang Enterprise SaaS Administration Portal — Manage users, platform metrics, and AI engine status.">
+    <link rel="icon" type="image/png" href="assets/omnilang-icon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Admin specific layout styling */
+        .admin-layout {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 4rem;
+        }
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--surface-glass-card);
+            border: 1px solid var(--border-glass-glow);
+            border-radius: var(--radius-xl);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .admin-brand-wrap {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .admin-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: var(--radius-full);
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.25));
+            border: 1px solid rgba(139,92,246,0.4);
+            color: #c084fc;
+        }
+
+        .superadmin-badge {
+            background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(234,179,8,0.25));
+            border: 1px solid rgba(245,158,11,0.5);
+            color: #fbbf24;
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: var(--surface-glass-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(16px);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-glass-glow);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.8;
+        }
+
+        .kpi-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .kpi-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+        }
+
+        .kpi-value {
+            font-size: 2.1rem;
+            font-weight: 900;
+            font-family: var(--font-display);
+            color: var(--text-main);
+            line-height: 1.1;
+            margin-bottom: 0.35rem;
+        }
+
+        .kpi-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* Filter Controls */
+        .controls-card {
+            background: var(--surface-glass-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-xl);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .search-input-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .search-input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .search-input-wrap input {
+            width: 100%;
+            padding: 0.65rem 1rem 0.65rem 2.5rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-glass);
+            background: rgba(0,0,0,0.3);
+            color: var(--text-main);
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input-wrap input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.25);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.65rem 1rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-glass);
+            background: rgba(0,0,0,0.3);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary);
+        }
+
+        /* Users Table */
+        .table-card {
+            background: var(--surface-glass-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+
+        .users-table th {
+            padding: 1rem 1.25rem;
+            background: rgba(0,0,0,0.35);
+            color: var(--text-secondary);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .users-table td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        .users-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .users-table tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* User Profile Pill */
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid var(--border-glass-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .user-info-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .user-handle-name {
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .user-id-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        /* Status & Provider Badges */
+        .role-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: var(--radius-full);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .role-pill.superadmin {
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.4);
+            color: #fbbf24;
+        }
+
+        .role-pill.admin {
+            background: rgba(139,92,246,0.15);
+            border: 1px solid rgba(139,92,246,0.4);
+            color: #c084fc;
+        }
+
+        .role-pill.user {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-secondary);
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: var(--radius-full);
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .verified-badge.yes {
+            background: rgba(16,185,129,0.15);
+            color: #34d399;
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+
+        .verified-badge.no {
+            background: rgba(244,63,94,0.15);
+            color: #fb7185;
+            border: 1px solid rgba(244,63,94,0.3);
+        }
+
+        .level-tag {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            background: rgba(6,182,212,0.15);
+            border: 1px solid rgba(6,182,212,0.3);
+            color: var(--accent-cyan);
+        }
+
+        /* Action Buttons in Row */
+        .row-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            justify-content: flex-end;
+        }
+
+        .btn-action-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-glass);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action-icon:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-main);
+            transform: translateY(-1px);
+        }
+
+        .btn-action-icon.delete:hover {
+            background: rgba(239,68,68,0.2);
+            border-color: rgba(239,68,68,0.5);
+            color: #f87171;
+        }
+
+        .btn-action-icon.verify:hover {
+            background: rgba(16,185,129,0.2);
+            border-color: rgba(16,185,129,0.5);
+            color: #34d399;
+        }
+
+        .btn-action-icon.role:hover {
+            background: rgba(139,92,246,0.2);
+            border-color: rgba(139,92,246,0.5);
+            color: #c084fc;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1.5rem;
+        }
+
+        .modal-card {
+            max-width: 480px;
+            width: 100%;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid var(--border-glass-glow);
+            border-radius: var(--radius-2xl);
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body style="background:var(--bg-gradient);min-height:100vh;color:var(--text-main);">
+
+    <div class="admin-layout">
+        <!-- Navigation / Header -->
+        <header class="admin-header">
+            <div class="admin-brand-wrap">
+                <a href="index.html" title="OmniLang Home">
+                    <img src="assets/omnilang-logo-dark.png" alt="OmniLang" style="height:48px;width:auto;filter:drop-shadow(0 4px 12px rgba(6,182,212,0.4));">
+                </a>
+                <span class="admin-badge-pill"><i class="fa-solid fa-shield-halved"></i> Enterprise Admin</span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:1rem;">
+                <!-- Current Model Chip -->
+                <div class="xp-chip" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.3);color:var(--accent-cyan);" id="headerModelChip" title="Active Model">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span id="activeModelName">Loading engine…</span>
+                </div>
+
+                <!-- Student Dashboard Link -->
+                <a href="dashboard.html" class="btn-ghost" style="padding:0.5rem 0.9rem;font-size:0.85rem;text-decoration:none;display:flex;align-items:center;gap:0.4rem;" title="Go to Learning Dashboard">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    <span>Student View</span>
+                </a>
+
+                <!-- Superadmin Profile Chip -->
+                <div style="display:flex;align-items:center;gap:0.65rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass);border-radius:var(--radius-full);padding:0.3rem 0.8rem 0.3rem 0.35rem;">
+                    <div style="width:30px;height:30px;border-radius:50%;background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.5);display:flex;align-items:center;justify-content:center;font-size:1rem;" id="adminAvatar">
+                        👑
+                    </div>
+                    <span style="font-size:0.85rem;font-weight:700;" id="adminHandleName">@tanim</span>
+                    <span class="admin-badge-pill superadmin-badge" id="adminRoleBadge">Super Admin</span>
+                </div>
+
+                <!-- Sign Out -->
+                <button type="button" class="btn-action-icon" id="btnAdminLogout" title="Sign Out">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI Metric Cards Ribbon -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Total Registered Accounts</span>
+                    <div class="kpi-icon" style="color:var(--primary);"><i class="fa-solid fa-users"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiTotalUsers">—</div>
+                <div class="kpi-meta">
+                    <span id="kpiVerifiedCount">—</span> verified &bull; <span id="kpiUnverifiedCount">—</span> pending
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Active Learners (24h)</span>
+                    <div class="kpi-icon" style="color:#fbbf24;"><i class="fa-solid fa-bolt-lightning"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiActive24h">—</div>
+                <div class="kpi-meta">
+                    <span id="kpiActive7d">—</span> active in the past 7 days
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Email Verification Rate</span>
+                    <div class="kpi-icon" style="color:#34d399;"><i class="fa-solid fa-shield-check"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiVerifiedRate">—%</div>
+                <div class="kpi-meta">
+                    Cryptographic OTP verification status
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Immersion Volume</span>
+                    <div class="kpi-icon" style="color:var(--accent-cyan);"><i class="fa-solid fa-comments"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiImmersionCount">—</div>
+                <div class="kpi-meta">
+                    <span id="kpiMessagesSent">—</span> chats &bull; <span id="kpiEssaysGraded">—</span> essays
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Server &amp; Memory</span>
+                    <div class="kpi-icon" style="color:#c084fc;"><i class="fa-solid fa-server"></i></div>
+                </div>
+                <div class="kpi-value" style="font-size:1.4rem;" id="kpiMemoryRss">— MB</div>
+                <div class="kpi-meta">
+                    Uptime: <span id="kpiUptime">—</span> &bull; Node <span id="kpiNodeVer">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter & Search Controls -->
+        <section class="controls-card">
+            <div class="search-input-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="userSearchInput" placeholder="Search by handle (@tanim), email, name, or userId…">
+            </div>
+
+            <div class="filter-group">
+                <select class="filter-select" id="roleFilter">
+                    <option value="">All Roles</option>
+                    <option value="superadmin">Super Admins 👑</option>
+                    <option value="admin">Admins 🛡️</option>
+                    <option value="user">Standard Learners</option>
+                </select>
+
+                <select class="filter-select" id="statusFilter">
+                    <option value="">All Verification</option>
+                    <option value="verified">Verified Only</option>
+                    <option value="unverified">Pending Verification</option>
+                </select>
+
+                <select class="filter-select" id="levelFilter">
+                    <option value="">All CEFR Levels</option>
+                    <option value="A1">Level A1</option>
+                    <option value="A2">Level A2</option>
+                    <option value="B1">Level B1</option>
+                    <option value="B2">Level B2</option>
+                    <option value="C1">Level C1</option>
+                </select>
+
+                <button type="button" class="btn-ghost" id="btnRefreshUsers" style="padding:0.65rem 1rem;" title="Refresh Data">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Users Data Table -->
+        <section class="table-card">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Learner Account</th>
+                        <th>Email &amp; Provider</th>
+                        <th>Role</th>
+                        <th>Level &amp; XP</th>
+                        <th>Status</th>
+                        <th>Assigned LLM</th>
+                        <th>Joined Date</th>
+                        <th style="text-align:right;">Admin Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted);">
+                            <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:0.5rem;"></i> Loading user accounts…
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- MODAL: DELETE CONFIRMATION                                       -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-card">
+            <div style="font-size:2.5rem;text-align:center;margin-bottom:0.75rem;">⚠️</div>
+            <h3 style="font-size:1.25rem;font-weight:800;text-align:center;margin-bottom:0.5rem;color:#f87171;">
+                Permanently Delete User?
+            </h3>
+            <p style="font-size:0.875rem;color:var(--text-secondary);text-align:center;margin-bottom:1.25rem;">
+                You are about to delete <strong id="deleteTargetHandle" style="color:var(--text-main);">@user</strong>.<br>
+                This will cascade and remove all their study history, vocabulary cards, essay grading, and chat sessions. <strong>This cannot be undone.</strong>
+            </p>
+            <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+                <button type="button" class="btn-ghost" id="btnCancelDelete" style="padding:0.65rem 1.25rem;">Cancel</button>
+                <button type="button" class="btn-primary" id="btnConfirmDelete" style="background:#ef4444;border-color:#dc2626;padding:0.65rem 1.25rem;">
+                    <i class="fa-solid fa-trash"></i> Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- MODAL: ROLE PROMOTION                                            -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" id="roleModal">
+        <div class="modal-card">
+            <div style="font-size:2.5rem;text-align:center;margin-bottom:0.75rem;">🛡️</div>
+            <h3 style="font-size:1.25rem;font-weight:800;text-align:center;margin-bottom:0.5rem;">
+                Change Role for <span id="roleTargetHandle" style="color:var(--primary);">@user</span>
+            </h3>
+            <p style="font-size:0.85rem;color:var(--text-secondary);text-align:center;margin-bottom:1.25rem;">
+                Select the access level for this account:
+            </p>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.5rem;">
+                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass);border-radius:var(--radius-md);cursor:pointer;">
+                    <input type="radio" name="roleRadio" value="user" checked>
+                    <div>
+                        <div style="font-weight:700;">Standard Learner</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Standard learning dashboard &amp; AI tools</div>
+                    </div>
+                </label>
+                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass);border-radius:var(--radius-md);cursor:pointer;">
+                    <input type="radio" name="roleRadio" value="admin">
+                    <div>
+                        <div style="font-weight:700;color:#c084fc;">Administrator</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Can view user lists, stats, and force-verify</div>
+                    </div>
+                </label>
+                <label style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass);border-radius:var(--radius-md);cursor:pointer;">
+                    <input type="radio" name="roleRadio" value="superadmin">
+                    <div>
+                        <div style="font-weight:700;color:#fbbf24;">Super Admin 👑</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Full control over all platform roles and accounts</div>
+                    </div>
+                </label>
+            </div>
+            <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+                <button type="button" class="btn-ghost" id="btnCancelRole" style="padding:0.65rem 1.25rem;">Cancel</button>
+                <button type="button" class="btn-primary" id="btnConfirmRole" style="padding:0.65rem 1.25rem;">
+                    Save Role
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- JAVASCRIPT: SAAS ADMIN LOGIC                                     -->
+    <!-- ================================================================ -->
+    <script>
+        // State
+        let allUsers = [];
+        let currentAdminUser = null;
+        let deleteTarget = null;
+        let roleTarget = null;
+
+        const authStr = localStorage.getItem('tanim_auth');
+        if (!authStr) {
+            window.location.href = 'login.html';
+        }
+
+        const auth = JSON.parse(authStr || '{}');
+
+        // Admin verification on boot
+        async function checkAdminAuth() {
+            try {
+                const res = await fetch('/api/admin/me', {
+                    headers: { 'X-User-Id': auth.userId }
+                });
+                if (!res.ok) {
+                    alert('Access denied: You do not have administrative privileges.');
+                    window.location.href = 'dashboard.html';
+                    return false;
+                }
+                const data = await res.json();
+                currentAdminUser = data.caller;
+
+                document.getElementById('adminHandleName').textContent = auth.nickname || `@${auth.username}` || '@tanim';
+                if (auth.avatar) document.getElementById('adminAvatar').textContent = auth.avatar;
+                if (data.caller.role === 'superadmin') {
+                    document.getElementById('adminRoleBadge').className = 'admin-badge-pill superadmin-badge';
+                    document.getElementById('adminRoleBadge').innerHTML = '<i class="fa-solid fa-crown"></i> Super Admin';
+                }
+                return true;
+            } catch (err) {
+                console.error('Admin auth check failed:', err);
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+
+        // Fetch SaaS Stats
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/admin/stats', {
+                    headers: { 'X-User-Id': auth.userId }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+
+                document.getElementById('kpiTotalUsers').textContent = data.users?.total ?? 0;
+                document.getElementById('kpiVerifiedCount').textContent = data.users?.verified ?? 0;
+                document.getElementById('kpiUnverifiedCount').textContent = data.users?.unverified ?? 0;
+                document.getElementById('kpiActive24h').textContent = data.users?.active24h ?? 0;
+                document.getElementById('kpiActive7d').textContent = data.users?.active7d ?? 0;
+                document.getElementById('kpiVerifiedRate').textContent = `${data.users?.verifiedRate ?? 100}%`;
+
+                const totalImmersion = (data.learning?.totalMessages || 0) + (data.learning?.totalEssays || 0);
+                document.getElementById('kpiImmersionCount').textContent = totalImmersion.toLocaleString();
+                document.getElementById('kpiMessagesSent').textContent = (data.learning?.totalMessages || 0).toLocaleString();
+                document.getElementById('kpiEssaysGraded').textContent = (data.learning?.totalEssays || 0).toLocaleString();
+
+                document.getElementById('activeModelName').textContent = data.system?.activeModel || 'mistral-nemo:12b';
+                document.getElementById('kpiMemoryRss').textContent = `${data.system?.memoryRssMb || 0} MB`;
+                document.getElementById('kpiNodeVer').textContent = data.system?.nodeVersion || 'v18';
+
+                // Format uptime
+                const sec = data.system?.uptimeSeconds || 0;
+                const hours = Math.floor(sec / 3600);
+                const mins = Math.floor((sec % 3600) / 60);
+                document.getElementById('kpiUptime').textContent = `${hours}h ${mins}m`;
+
+            } catch (err) {
+                console.error('Failed to load admin stats:', err);
+            }
+        }
+
+        // Fetch User Listing (Sanitized — zero passwords)
+        async function loadUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            try {
+                const res = await fetch('/api/admin/users', {
+                    headers: { 'X-User-Id': auth.userId }
+                });
+                if (!res.ok) throw new Error('Could not retrieve user directory');
+                const data = await res.json();
+                allUsers = data.users || [];
+                renderUsersTable();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:3rem;color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i> Error loading users: ${err.message}</td></tr>`;
+            }
+        }
+
+        // Filter and Render Users
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            const search = document.getElementById('userSearchInput').value.trim().toLowerCase();
+            const roleF = document.getElementById('roleFilter').value;
+            const statusF = document.getElementById('statusFilter').value;
+            const levelF = document.getElementById('levelFilter').value;
+
+            const filtered = allUsers.filter(u => {
+                const matchesSearch = !search ||
+                    u.nickname.toLowerCase().includes(search) ||
+                    u.username.toLowerCase().includes(search) ||
+                    u.email.toLowerCase().includes(search) ||
+                    u.userId.toLowerCase().includes(search);
+
+                const matchesRole = !roleF || u.role === roleF;
+                const matchesStatus = !statusF ||
+                    (statusF === 'verified' && u.isVerified) ||
+                    (statusF === 'unverified' && !u.isVerified);
+                const matchesLevel = !levelF || u.currentLevel === levelF;
+
+                return matchesSearch && matchesRole && matchesStatus && matchesLevel;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted);">No accounts match the selected filters.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(u => {
+                const isSuperAdmin = u.role === 'superadmin';
+                const isCurrentAccount = u.userId === auth.userId;
+
+                const roleBadge = isSuperAdmin
+                    ? `<span class="role-pill superadmin"><i class="fa-solid fa-crown"></i> Super Admin</span>`
+                    : (u.role === 'admin'
+                        ? `<span class="role-pill admin"><i class="fa-solid fa-shield"></i> Admin</span>`
+                        : `<span class="role-pill user">Learner</span>`);
+
+                const verifiedBadge = u.isVerified
+                    ? `<span class="verified-badge yes"><i class="fa-solid fa-circle-check"></i> Verified</span>`
+                    : `<span class="verified-badge no"><i class="fa-solid fa-clock"></i> Pending</span>`;
+
+                const providerIcon = u.authProvider === 'google'
+                    ? `<i class="fa-brands fa-google" style="color:#ea4335;" title="Google Auth"></i>`
+                    : (u.authProvider === 'apple'
+                        ? `<i class="fa-brands fa-apple" style="color:#fff;" title="Apple Auth"></i>`
+                        : `<i class="fa-solid fa-envelope" style="color:var(--text-muted);" title="Local Email"></i>`);
+
+                const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar-badge">${u.avatar || '🇩🇪'}</div>
+                                <div class="user-info-text">
+                                    <div class="user-handle-name">
+                                        ${u.nickname}
+                                        ${isSuperAdmin ? '<i class="fa-solid fa-crown" style="color:#fbbf24;font-size:0.75rem;" title="Platform Owner"></i>' : ''}
+                                    </div>
+                                    <div class="user-id-sub">${u.userId}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                ${providerIcon}
+                                <span>${u.email}</span>
+                            </div>
+                        </td>
+                        <td>${roleBadge}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <span class="level-tag">${u.currentLevel}</span>
+                                <span style="font-weight:700;">${u.xp} XP</span>
+                            </div>
+                        </td>
+                        <td>${verifiedBadge}</td>
+                        <td style="color:var(--accent-cyan);font-size:0.8rem;">
+                            <i class="fa-solid fa-microchip" style="font-size:0.7rem;"></i> ${u.selectedModel || '—'}
+                        </td>
+                        <td style="color:var(--text-muted);font-size:0.8rem;">${joinedDate}</td>
+                        <td>
+                            <div class="row-actions">
+                                ${!u.isVerified ? `
+                                    <button type="button" class="btn-action-icon verify" title="Force Verify Email" onclick="forceVerifyUser('${u.userId}', '${u.nickname}')">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                ` : ''}
+
+                                ${currentAdminUser?.role === 'superadmin' && !isSuperAdmin ? `
+                                    <button type="button" class="btn-action-icon role" title="Change Role" onclick="openRoleModal('${u.userId}', '${u.nickname}', '${u.role}')">
+                                        <i class="fa-solid fa-user-gear"></i>
+                                    </button>
+                                ` : ''}
+
+                                ${!isSuperAdmin && !isCurrentAccount ? `
+                                    <button type="button" class="btn-action-icon delete" title="Delete User Permanently" onclick="openDeleteModal('${u.userId}', '${u.nickname}')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Action: Force Verify
+        window.forceVerifyUser = async (userId, handle) => {
+            if (!confirm(`Force verify account for ${handle}?`)) return;
+            try {
+                const res = await fetch(`/api/admin/user/${userId}/verify`, {
+                    method: 'POST',
+                    headers: { 'X-User-Id': auth.userId }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                await loadUsers();
+                await loadStats();
+            } catch (err) {
+                alert('Verification failed: ' + err.message);
+            }
+        };
+
+        // Action: Delete Modal
+        const deleteModal = document.getElementById('deleteModal');
+        window.openDeleteModal = (userId, handle) => {
+            deleteTarget = { userId, handle };
+            document.getElementById('deleteTargetHandle').textContent = handle;
+            deleteModal.style.display = 'flex';
+        };
+
+        document.getElementById('btnCancelDelete').addEventListener('click', () => {
+            deleteModal.style.display = 'none';
+            deleteTarget = null;
+        });
+
+        document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+            if (!deleteTarget) return;
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/admin/user/${deleteTarget.userId}`, {
+                    method: 'DELETE',
+                    headers: { 'X-User-Id': auth.userId }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                deleteModal.style.display = 'none';
+                deleteTarget = null;
+                await loadUsers();
+                await loadStats();
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // Action: Role Modal
+        const roleModal = document.getElementById('roleModal');
+        window.openRoleModal = (userId, handle, currentRole) => {
+            roleTarget = { userId, handle };
+            document.getElementById('roleTargetHandle').textContent = handle;
+            const radio = document.querySelector(`input[name="roleRadio"][value="${currentRole}"]`);
+            if (radio) radio.checked = true;
+            roleModal.style.display = 'flex';
+        };
+
+        document.getElementById('btnCancelRole').addEventListener('click', () => {
+            roleModal.style.display = 'none';
+            roleTarget = null;
+        });
+
+        document.getElementById('btnConfirmRole').addEventListener('click', async () => {
+            if (!roleTarget) return;
+            const selectedRole = document.querySelector('input[name="roleRadio"]:checked')?.value;
+            const btn = document.getElementById('btnConfirmRole');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/admin/user/${roleTarget.userId}/role`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': auth.userId
+                    },
+                    body: JSON.stringify({ role: selectedRole })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                roleModal.style.display = 'none';
+                roleTarget = null;
+                await loadUsers();
+                await loadStats();
+            } catch (err) {
+                alert('Role update failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // Event Listeners for Filters
+        document.getElementById('userSearchInput').addEventListener('input', renderUsersTable);
+        document.getElementById('roleFilter').addEventListener('change', renderUsersTable);
+        document.getElementById('statusFilter').addEventListener('change', renderUsersTable);
+        document.getElementById('levelFilter').addEventListener('change', renderUsersTable);
+        document.getElementById('btnRefreshUsers').addEventListener('click', async () => {
+            const icon = document.querySelector('#btnRefreshUsers i');
+            icon.classList.add('fa-spin');
+            await Promise.all([loadStats(), loadUsers()]);
+            setTimeout(() => icon.classList.remove('fa-spin'), 600);
+        });
+
+        // Sign Out
+        document.getElementById('btnAdminLogout').addEventListener('click', () => {
+            localStorage.removeItem('tanim_auth');
+            window.location.href = 'login.html';
+        });
+
+        // Boot
+        (async () => {
+            const ok = await checkAdminAuth();
+            if (ok) {
+                await Promise.all([loadStats(), loadUsers()]);
+            }
+        })();
+    </script>
+</body>
+</html>
