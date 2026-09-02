@@ -60,8 +60,17 @@ function updateNavState() {
     const navAvatar = document.getElementById('navAvatar');
     if (navAvatar) navAvatar.textContent = auth.avatar || '🇩🇪';
 
-    const navUsername = document.getElementById('navUsername');
-    if (navUsername) navUsername.textContent = auth.username || 'Learner';
+    const rawNick = (auth.nickname || auth.username || 'Learner').replace(/^@/, '');
+    const formattedNick = `@${rawNick}`;
+
+    const navNickname = document.getElementById('navNickname') || document.getElementById('navUsername');
+    if (navNickname) navNickname.textContent = formattedNick;
+
+    const dropdownName = document.getElementById('userDropdownName');
+    if (dropdownName) dropdownName.textContent = auth.username || rawNick;
+
+    const dropdownHandle = document.getElementById('userDropdownHandle');
+    if (dropdownHandle) dropdownHandle.textContent = formattedNick;
 
     const navStreak = document.getElementById('navStreakCount');
     if (navStreak) navStreak.textContent = `${auth.streak || 1} Day${(auth.streak || 1) !== 1 ? 's' : ''}`;
@@ -70,7 +79,7 @@ function updateNavState() {
     if (navXp) navXp.textContent = `${auth.xp || 0} XP`;
 
     const navModel = document.getElementById('navModelName');
-    if (navModel) navModel.textContent = auth.selectedModel || 'mistral-nemo:12b';
+    if (navModel) navModel.textContent = auth.selectedModel || 'No model selected';
 
     const coachTag = document.getElementById('coachLevelTag');
     if (coachTag) coachTag.textContent = currentLevel;
@@ -413,8 +422,40 @@ document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     });
 });
 
-// Quick triggers
-document.getElementById('navUserChip')?.addEventListener('click', () => openPanel('progress'));
+// Quick triggers & User Menu Dropdown
+const userChip = document.getElementById('navUserChip');
+const userDropdown = document.getElementById('userDropdownMenu');
+
+userChip?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!userDropdown) return;
+    const isVisible = userDropdown.style.display === 'block';
+    userDropdown.style.display = isVisible ? 'none' : 'block';
+});
+
+// Close dropdown on click outside
+document.addEventListener('click', (e) => {
+    if (userDropdown && !userChip?.contains(e.target) && !userDropdown.contains(e.target)) {
+        userDropdown.style.display = 'none';
+    }
+});
+
+document.getElementById('dropdownProfileBtn')?.addEventListener('click', () => {
+    if (userDropdown) userDropdown.style.display = 'none';
+    openPanel('settings');
+});
+
+document.getElementById('dropdownAnalyticsBtn')?.addEventListener('click', () => {
+    if (userDropdown) userDropdown.style.display = 'none';
+    openPanel('progress');
+});
+
+document.getElementById('dropdownLogoutBtn')?.addEventListener('click', () => {
+    localStorage.removeItem('tanim_auth');
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+});
+
 document.getElementById('settingsQuickBtn')?.addEventListener('click', () => openPanel('settings'));
 
 // Theme toggle
@@ -2188,8 +2229,86 @@ document.getElementById('addWordToSrsBtn')?.addEventListener('click', async () =
 });
 
 // =========================================================
-// 7. PROGRESS TRACKER & ANALYTICS DASHBOARD
+// 7. PROGRESS TRACKER & GAMIFIED ANALYTICS DASHBOARD
 // =========================================================
+
+// Learner Rank progression based on XP
+function getLearnerRank(xp = 0) {
+    const ranks = [
+        { level: 1, title: 'Sprach-Neuling', minXp: 0, maxXp: 100, icon: '🌱', tier: 'bronze' },
+        { level: 2, title: 'Wort-Entdecker', minXp: 100, maxXp: 250, icon: '🧭', tier: 'bronze' },
+        { level: 3, title: 'Satz-Baumeister', minXp: 250, maxXp: 500, icon: '🔨', tier: 'silver' },
+        { level: 4, title: 'Konversations-Pionier', minXp: 500, maxXp: 1000, icon: '🎙️', tier: 'silver' },
+        { level: 5, title: 'Grammatik-Meister', minXp: 1000, maxXp: 2000, icon: '📜', tier: 'gold' },
+        { level: 6, title: 'Schwarzwald-Gelehrter', minXp: 2000, maxXp: 3500, icon: '🌲', tier: 'gold' },
+        { level: 7, title: 'Goethe-Gefährte', minXp: 3500, maxXp: 5000, icon: '🏛️', tier: 'diamond' },
+        { level: 8, title: 'Die Sprachlegende', minXp: 5000, maxXp: 10000, icon: '👑', tier: 'diamond' }
+    ];
+    for (let i = ranks.length - 1; i >= 0; i--) {
+        if (xp >= ranks[i].minXp) {
+            const r = ranks[i];
+            const span = r.maxXp - r.minXp;
+            const currentInLevel = xp - r.minXp;
+            const pct = Math.min(100, Math.max(5, Math.floor((currentInLevel / span) * 100)));
+            const nextXp = Math.max(0, r.maxXp - xp);
+            return { ...r, pct, nextXp };
+        }
+    }
+    return { level: 1, title: 'Sprach-Neuling', minXp: 0, maxXp: 100, icon: '🌱', tier: 'bronze', pct: 5, nextXp: 100 };
+}
+
+// Celebration Confetti Burst
+let confettiAnimId = null;
+function launchConfetti() {
+    const canvas = document.getElementById('confettiCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.display = 'block';
+
+    const colors = ['#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#fbbf24', '#06b6d4'];
+    const pieces = Array.from({ length: 80 }, () => ({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * 50,
+        r: 5 + Math.random() * 6,
+        d: Math.random() * 80,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        tilt: Math.floor(Math.random() * 10) - 10,
+        tiltAngleInc: (Math.random() * 0.07) + 0.05,
+        tiltAngle: 0,
+        speed: 2 + Math.random() * 4
+    }));
+
+    if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+
+    const startTime = Date.now();
+    function render() {
+        const elapsed = Date.now() - startTime;
+        if (elapsed > 2800) {
+            canvas.style.display = 'none';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => {
+            p.tiltAngle += p.tiltAngleInc;
+            p.y += (Math.cos(p.d) + 3 + p.r / 2) * 0.6 * p.speed;
+            p.x += Math.sin(p.tiltAngle) * 2;
+            p.tilt = Math.sin(p.tiltAngle) * 15;
+
+            ctx.beginPath();
+            ctx.lineWidth = p.r;
+            ctx.strokeStyle = p.color;
+            ctx.moveTo(p.x + p.tilt + p.r / 4, p.y);
+            ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
+            ctx.stroke();
+        });
+        confettiAnimId = requestAnimationFrame(render);
+    }
+    render();
+}
+
 async function loadProgressDashboard() {
     const container = document.getElementById('progressDashboardContent');
     container.innerHTML = '<div style="text-align:center;padding:3rem;"><i class="fa-solid fa-circle-notch fa-spin spin-anim" style="font-size:2rem;color:var(--primary);"></i></div>';
@@ -2204,123 +2323,272 @@ async function loadProgressDashboard() {
         localStorage.setItem('tanim_auth', JSON.stringify(auth));
         updateNavState();
 
+        const rank = getLearnerRank(user.xp || 0);
+
+        // Leitner SRS Distribution
         const srsBoxes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
         (user.srsProgress || []).forEach(p => {
             const st = Math.min(5, Math.max(1, p.srsStage || 1));
             srsBoxes[st] = (srsBoxes[st] || 0) + 1;
         });
+        const totalSrsCards = Object.values(srsBoxes).reduce((a, b) => a + b, 0);
+        const retainedCards = (srsBoxes[4] || 0) + (srsBoxes[5] || 0);
+        const retentionRate = totalSrsCards > 0 ? Math.round((retainedCards / totalSrsCards) * 100) : 100;
 
+        // 22 Gamified Achievement Badges
         const achievementsList = [
-            { id: 'first_login', title: 'Willkommen!', desc: 'Started your German journey', icon: '🇩🇪' },
-            { id: 'first_word', title: 'Wortschatz Starter', desc: 'Learned your 1st word', icon: '🌱' },
-            { id: 'vocab_10', title: 'Word Collector', desc: 'Learned 10+ German words', icon: '📚' },
-            { id: 'vocab_25', title: 'Lexicon Master', desc: 'Learned 25+ German words', icon: '🧠' },
-            { id: 'first_chat', title: 'Plaudertasche', desc: 'Exchanged 1st message with Lukas', icon: '💬' },
-            { id: 'chat_15', title: 'German Speaker', desc: 'Exchanged 15+ messages with AI', icon: '🎙️' },
-            { id: 'first_essay', title: 'Schriftsteller', desc: 'Submitted 1st German essay', icon: '✍️' },
-            { id: 'streak_3', title: 'Disziplin', desc: '3-day study streak', icon: '🔥' },
-            { id: 'streak_7', title: 'Feuer und Flamme', desc: '7-day study streak', icon: '⚡' },
-            { id: 'xp_100', title: 'XP Pioneer', desc: 'Earned over 100 XP', icon: '🏆' },
-            { id: 'xp_500', title: 'Master Scholar', desc: 'Earned over 500 XP', icon: '👑' }
+            // General & Onboarding
+            { id: 'first_login', title: 'Willkommen!', desc: 'Begann die Reise in die deutsche Sprache', icon: '🇩🇪', tier: 'bronze', category: 'general', xpReward: 25, current: 1, target: 1, unit: 'Start' },
+            { id: 'daily_all', title: 'Tages-Champion', desc: 'Alle 4 Lernmodule an einem Tag gemeistert', icon: '⭐', tier: 'gold', category: 'general', xpReward: 150, current: (user.dailyModuleStatus || []).some(d => d.vocabCompleted && d.chatCompleted && d.writingCompleted && d.readingCompleted) ? 1 : 0, target: 1, unit: 'Tage' },
+
+            // Vocabulary & Leitner SRS
+            { id: 'first_word', title: 'Wortschatz Starter', desc: 'Erstes deutsches Wort im Karteikasten verankert', icon: '🌱', tier: 'bronze', category: 'vocab', xpReward: 25, current: user.totalWordsLearned || 0, target: 1, unit: 'Wort' },
+            { id: 'vocab_10', title: 'Wortsammler', desc: '10+ Vokabeln im Langzeitgedächtnis trainiert', icon: '📚', tier: 'bronze', category: 'vocab', xpReward: 50, current: user.totalWordsLearned || 0, target: 10, unit: 'Wörter' },
+            { id: 'vocab_25', title: 'Wortschatz-Kenner', desc: '25+ Wörter aktiv im Leitner-Wiederholungssystem', icon: '🧠', tier: 'silver', category: 'vocab', xpReward: 75, current: user.totalWordsLearned || 0, target: 25, unit: 'Wörter' },
+            { id: 'vocab_50', title: 'Lexikon-Meister', desc: '50+ Wörter gemeistert — starker Wortschatz!', icon: '🏛️', tier: 'gold', category: 'vocab', xpReward: 125, current: user.totalWordsLearned || 0, target: 50, unit: 'Wörter' },
+            { id: 'vocab_100', title: 'Sprach-Bibliothekar', desc: '100+ Wörter gelernt — wahrer Wortschatz-Gigant!', icon: '👑', tier: 'diamond', category: 'vocab', xpReward: 250, current: user.totalWordsLearned || 0, target: 100, unit: 'Wörter' },
+
+            // Conversation & AI Immersion
+            { id: 'first_chat', title: 'Plaudertasche', desc: 'Erste Konversation mit Lukas gewechselt', icon: '💬', tier: 'bronze', category: 'chat', xpReward: 25, current: user.totalMessages || 0, target: 1, unit: 'Nachricht' },
+            { id: 'chat_15', title: 'Deutscher Redner', desc: '15+ Gesprächsrunden mit der KI geführt', icon: '🎙️', tier: 'silver', category: 'chat', xpReward: 75, current: user.totalMessages || 0, target: 15, unit: 'Nachrichten' },
+            { id: 'chat_50', title: 'Lukas’ Bester Freund', desc: '50+ Nachrichten — fließende Dialogbereitschaft!', icon: '🗣️', tier: 'gold', category: 'chat', xpReward: 150, current: user.totalMessages || 0, target: 50, unit: 'Nachrichten' },
+            { id: 'chat_100', title: 'Sprachgenie im Dialog', desc: '100+ Nachrichten — meisterhafte Gesprächsführung!', icon: '⚡', tier: 'diamond', category: 'chat', xpReward: 300, current: user.totalMessages || 0, target: 100, unit: 'Nachrichten' },
+
+            // Writing & Essays
+            { id: 'first_essay', title: 'Der Schriftsteller', desc: 'Ersten deutschen Aufsatz zur Bewertung eingereicht', icon: '✍️', tier: 'bronze', category: 'writing', xpReward: 30, current: user.essaysGraded || 0, target: 1, unit: 'Aufsatz' },
+            { id: 'essay_3', title: 'Goethe-Lehrling', desc: '3+ Aufsätze mit Feedback analysiert und verbessert', icon: '📜', tier: 'silver', category: 'writing', xpReward: 80, current: user.essaysGraded || 0, target: 3, unit: 'Aufsätze' },
+            { id: 'essay_high', title: 'Goldene Feder', desc: 'Einen Aufsatz mit 85+ Punkten absolviert', icon: '🖋️', tier: 'gold', category: 'writing', xpReward: 150, current: user.averageEssayScore || 0, target: 85, unit: 'Punkte' },
+
+            // Graded Reading
+            { id: 'first_story', title: 'Lesefuchs', desc: 'Erste interaktive CEFR-Geschichte gelesen', icon: '📖', tier: 'bronze', category: 'reading', xpReward: 25, current: user.storiesRead || 0, target: 1, unit: 'Story' },
+            { id: 'stories_5', title: 'Bücherwurm', desc: '5+ CEFR-Geschichten aufmerksam durchgearbeitet', icon: '🦉', tier: 'silver', category: 'reading', xpReward: 75, current: user.storiesRead || 0, target: 5, unit: 'Stories' },
+
+            // Streaks & Dedication
+            { id: 'streak_3', title: 'Eiserne Disziplin', desc: '3 Tage in Folge ohne Unterbrechung geübt', icon: '🔥', tier: 'bronze', category: 'streak', xpReward: 40, current: user.streak || 1, target: 3, unit: 'Tage' },
+            { id: 'streak_7', title: 'Feuer und Flamme', desc: '7-Tage-Streak! Eine ganze Woche voller Leidenschaft', icon: '🌋', tier: 'silver', category: 'streak', xpReward: 100, current: user.streak || 1, target: 7, unit: 'Tage' },
+            { id: 'streak_14', title: 'Unaufhaltsam', desc: '14-Tage-Streak! Gewohnheit wird zur Meisterschaft', icon: '☄️', tier: 'gold', category: 'streak', xpReward: 200, current: user.streak || 1, target: 14, unit: 'Tage' },
+
+            // XP Milestones
+            { id: 'xp_100', title: 'XP-Pionier', desc: 'Erreiche 100 Erfahrungspunkte (XP)', icon: '🏆', tier: 'bronze', category: 'xp', xpReward: 25, current: user.xp || 0, target: 100, unit: 'XP' },
+            { id: 'xp_500', title: 'Großer Gelehrter', desc: 'Erreiche 500 Erfahrungspunkte (XP)', icon: '🎖️', tier: 'silver', category: 'xp', xpReward: 75, current: user.xp || 0, target: 500, unit: 'XP' },
+            { id: 'xp_1000', title: 'Titan der Sprache', desc: 'Über 1.000 XP angehäuft — wahrer Legendenstatus!', icon: '🌌', tier: 'diamond', category: 'xp', xpReward: 250, current: user.xp || 0, target: 1000, unit: 'XP' }
         ];
 
-        const unlockedIds = new Set((user.achievements || []).map(a => a.id));
-        document.getElementById('trophiesUnlockedCount').textContent = `${unlockedIds.size} badges unlocked`;
+        const unlockedMap = new Map((user.achievements || []).map(a => [a.id, a]));
+        const unlockedCount = achievementsList.filter(a => unlockedMap.has(a.id)).length;
+        const totalBadges = achievementsList.length;
 
-        const trophiesHtml = achievementsList.map(ach => {
-            const isUnlocked = unlockedIds.has(ach.id);
+        // Update dashboard overview counter
+        const overviewCounter = document.getElementById('trophiesUnlockedCount');
+        if (overviewCounter) {
+            overviewCounter.textContent = `${unlockedCount}/${totalBadges} Badges`;
+        }
+
+        // 7-Day Flame Streak Strip calculation
+        const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+        const currentDayIdx = (new Date().getDay() + 6) % 7; // Monday = 0
+        const streakDaysCount = Math.min(7, user.streak || 1);
+        
+        const streakNodesHtml = weekDays.map((dayName, idx) => {
+            const isToday = idx === currentDayIdx;
+            const isActive = (idx <= currentDayIdx && (currentDayIdx - idx) < streakDaysCount);
             return `
-                <div class="trophy-card ${isUnlocked ? 'unlocked' : 'locked'}">
-                    <div class="trophy-icon">${ach.icon}</div>
-                    <div>
-                        <div style="font-size:0.9rem;font-weight:700;color:var(--text-main);">${esc(ach.title)}</div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);">${esc(ach.desc)}</div>
-                    </div>
+                <div class="streak-day-node ${isActive ? 'active' : ''} ${isToday ? 'today' : ''}" title="${dayName}">
+                    <span>${dayName}</span>
+                    <span style="font-size:1rem;">${isActive ? '🔥' : '○'}</span>
                 </div>
             `;
         }).join('');
 
-        const levels = ['A1', 'A2', 'B1', 'B2'];
+        // CEFR Mastery Rows
+        const levels = ['A1', 'A2', 'B1', 'B2', 'C1'];
         const cefrRows = levels.map(l => {
             const prog = user.progressByLevel?.[l] || {};
-            const pct = Math.min(100, Math.max(10, (prog.wordsLearned || 0) * 10 + (l === user.currentLevel ? 40 : 0)));
+            const isCurrent = (l === user.currentLevel);
+            const basePct = isCurrent ? 55 : (l < user.currentLevel ? 100 : 15);
+            const pct = Math.min(100, Math.max(10, (prog.wordsLearned || 0) * 8 + basePct));
             return `
-                <div style="margin-bottom:0.75rem;">
-                    <div style="display:flex;justify-content:space-between;font-size:0.8125rem;font-weight:700;margin-bottom:0.25rem;">
-                        <span>Level ${l}</span>
-                        <span>${pct}% Mastery</span>
+                <div style="margin-bottom:0.85rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;font-weight:700;margin-bottom:0.35rem;">
+                        <span style="display:flex;align-items:center;gap:0.4rem;">
+                            <span class="badge-level badge-${l.toLowerCase()}">Level ${l}</span>
+                            ${isCurrent ? '<span style="font-size:0.7rem;color:var(--accent-amber);font-weight:800;">(Aktive Stufe)</span>' : ''}
+                        </span>
+                        <span style="color:var(--text-main);font-weight:800;">${pct}% Meisterschaft</span>
                     </div>
-                    <div class="srs-progress-bar">
-                        <div class="srs-progress-fill" style="width:${pct}%;"></div>
+                    <div class="srs-progress-bar" style="height:8px;background:rgba(255,255,255,0.06);border-radius:999px;">
+                        <div class="srs-progress-fill" style="width:${pct}%;border-radius:999px;"></div>
                     </div>
                 </div>
             `;
         }).join('');
 
+        // Trophies HTML Generator with Filtering Support
+        function generateTrophyCardsHtml(filter = 'all') {
+            return achievementsList.map(ach => {
+                const unlockedRecord = unlockedMap.get(ach.id);
+                const isUnlocked = !!unlockedRecord;
+
+                // Category or Status filtering
+                if (filter === 'unlocked' && !isUnlocked) return '';
+                if (filter === 'locked' && isUnlocked) return '';
+                if (filter === 'vocab' && ach.category !== 'vocab') return '';
+                if (filter === 'chat' && ach.category !== 'chat') return '';
+                if (filter === 'writing' && (ach.category !== 'writing' && ach.category !== 'reading')) return '';
+                if (filter === 'streak' && (ach.category !== 'streak' && ach.category !== 'xp')) return '';
+
+                const progressPct = isUnlocked ? 100 : Math.min(99, Math.round((Math.min(ach.current, ach.target) / ach.target) * 100));
+
+                return `
+                    <div class="trophy-card ${isUnlocked ? 'unlocked' : 'locked'} tier-${ach.tier}" data-badge-id="${ach.id}">
+                        <div class="trophy-card-header">
+                            <div class="trophy-icon-box">
+                                <span>${ach.icon}</span>
+                            </div>
+                            <div class="trophy-content-group">
+                                <div class="trophy-title-row">
+                                    <span class="trophy-title" title="${esc(ach.title)}">${esc(ach.title)}</span>
+                                    <span class="trophy-tier-tag ${ach.tier}">${ach.tier}</span>
+                                </div>
+                                <div class="trophy-desc">${esc(ach.desc)}</div>
+                            </div>
+                        </div>
+
+                        ${isUnlocked ? `
+                            <div class="trophy-unlocked-footer">
+                                <span><i class="fa-solid fa-circle-check"></i> Freigeschaltet</span>
+                                <span class="trophy-xp-bonus">+${ach.xpReward} XP</span>
+                            </div>
+                        ` : `
+                            <div class="trophy-progress-wrap">
+                                <div class="trophy-progress-text">
+                                    <span>${ach.current} / ${ach.target} ${ach.unit}</span>
+                                    <span>${progressPct}%</span>
+                                </div>
+                                <div class="trophy-progress-track">
+                                    <div class="trophy-progress-fill" style="width:${progressPct}%;"></div>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
         container.innerHTML = `
-            <div class="profile-hero-card">
-                <div style="display:flex;align-items:center;gap:1.25rem;">
-                    <div class="profile-avatar-large">${esc(user.avatar || '🇩🇪')}</div>
-                    <div>
-                        <h3 style="font-size:1.5rem;font-weight:800;color:var(--text-main);">${esc(user.username)}</h3>
-                        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.35rem;">
-                            <span class="badge-level badge-a2">Level ${esc(user.currentLevel)}</span>
-                            <span style="font-size:0.8125rem;color:var(--text-muted);">Joined ${new Date(user.createdAt || Date.now()).toLocaleDateString()}</span>
+            <!-- HERO LEARNER JOURNEY CARD -->
+            <div class="journey-hero-card">
+                <div class="journey-hero-top">
+                    <div class="rank-avatar-wrap">
+                        <div class="rank-shield glow-${rank.tier}">
+                            <span>${esc(user.avatar || '🇩🇪')}</span>
+                            <div class="rank-level-tag">LVL ${rank.level}</div>
+                        </div>
+                        <div class="rank-info-block">
+                            <h3>
+                                ${esc(user.username)}
+                                <span class="badge-level badge-${(user.currentLevel || 'A2').toLowerCase()}">${esc(user.currentLevel || 'A2')}</span>
+                            </h3>
+                            <div class="rank-title-badge">
+                                <span>${rank.icon}</span>
+                                <span>Rang: ${esc(rank.title)}</span>
+                            </div>
                         </div>
                     </div>
+                    <div style="display:flex;gap:0.75rem;">
+                        <button class="btn-secondary" id="editProfileShortcutBtn" style="padding:0.6rem 1.15rem;border-radius:var(--radius-full);">
+                            <i class="fa-solid fa-pen-to-square"></i> Profil bearbeiten
+                        </button>
+                    </div>
                 </div>
-                <div style="display:flex;gap:0.75rem;">
-                    <button class="btn-secondary" id="editProfileShortcutBtn"><i class="fa-solid fa-pen-to-square"></i> Edit Profile</button>
+
+                <!-- XP LEVEL PROGRESS STRIP -->
+                <div class="xp-level-strip">
+                    <div class="xp-level-header">
+                        <span style="color:var(--text-main);"><i class="fa-solid fa-bolt" style="color:var(--accent-amber);"></i> Stufe ${rank.level} &bull; ${rank.title}</span>
+                        <span style="color:var(--accent-cyan);">${user.xp || 0} / ${rank.maxXp} XP &bull; <strong style="color:var(--text-main);">${rank.nextXp} XP</strong> bis Level ${rank.level + 1}</span>
+                    </div>
+                    <div class="xp-track-bar">
+                        <div class="xp-track-fill" style="width:${rank.pct}%;"></div>
+                    </div>
                 </div>
             </div>
 
+            <!-- 7-DAY STREAK FLAME TRACKER -->
+            <div class="streak-calendar-strip">
+                <div class="streak-cal-left">
+                    <div class="streak-flame-icon">🔥</div>
+                    <div>
+                        <div style="font-size:1.1rem;font-weight:900;color:var(--text-main);">
+                            ${user.streak || 1} Tage Lern-Serie
+                        </div>
+                        <div style="font-size:0.78rem;color:var(--text-muted);">
+                            Halte das Feuer am Brennen! Übe täglich für Streak-Belohnungen.
+                        </div>
+                    </div>
+                </div>
+                <div class="streak-nodes-row">
+                    ${streakNodesHtml}
+                </div>
+            </div>
+
+            <!-- 4-COL STATS GRID -->
             <div class="stats-4col-grid">
                 <div class="stat-box-card">
                     <div class="stat-box-num" style="color:var(--primary);">${user.xp || 0}</div>
-                    <div class="stat-box-label">Total XP</div>
+                    <div class="stat-box-label"><i class="fa-solid fa-bolt" style="color:var(--accent-amber);"></i> Gesamt-XP</div>
                 </div>
                 <div class="stat-box-card">
                     <div class="stat-box-num" style="color:#f59e0b;">${user.streak || 1}</div>
-                    <div class="stat-box-label">Day Streak 🔥</div>
+                    <div class="stat-box-label"><i class="fa-solid fa-fire"></i> Tage Serie</div>
                 </div>
                 <div class="stat-box-card">
                     <div class="stat-box-num" style="color:#10b981;">${user.totalWordsLearned || 0}</div>
-                    <div class="stat-box-label">Words Learned</div>
+                    <div class="stat-box-label"><i class="fa-solid fa-book-bookmark"></i> Wörter Gelernt</div>
                 </div>
                 <div class="stat-box-card">
                     <div class="stat-box-num" style="color:#8b5cf6;">${user.totalMessages || 0}</div>
-                    <div class="stat-box-label">AI Chat Turns</div>
+                    <div class="stat-box-label"><i class="fa-solid fa-comments"></i> Dialog-Runden</div>
                 </div>
             </div>
 
             <!-- CEFR & LEITNER SRS PROGRESS -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
                 <div class="glass-card" style="padding:1.5rem;">
-                    <h4 style="font-size:1rem;font-weight:800;margin-bottom:1rem;"><i class="fa-solid fa-graduation-cap"></i> CEFR Level Mastery</h4>
+                    <h4 style="font-size:1.05rem;font-weight:900;margin-bottom:1.15rem;display:flex;align-items:center;gap:0.5rem;">
+                        <i class="fa-solid fa-graduation-cap" style="color:var(--primary);"></i> CEFR Stufen-Meisterschaft
+                    </h4>
                     ${cefrRows}
                 </div>
 
                 <div class="glass-card" style="padding:1.5rem;">
-                    <h4 style="font-size:1rem;font-weight:800;margin-bottom:0.5rem;"><i class="fa-solid fa-boxes-stacked"></i> Leitner SRS 5-Box Distribution</h4>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem;">Box 1 (Daily) &rarr; Box 5 (Permanent Retention)</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                        <h4 style="font-size:1.05rem;font-weight:900;display:flex;align-items:center;gap:0.5rem;">
+                            <i class="fa-solid fa-boxes-stacked" style="color:var(--accent-cyan);"></i> Leitner SRS 5-Box Tresor
+                        </h4>
+                        <span style="font-size:0.8rem;font-weight:800;color:var(--accent-emerald);">${retentionRate}% Retention</span>
+                    </div>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem;">
+                        Box 1 (Täglich) &rarr; Box 5 (Dauerhaftes Langzeitgedächtnis)
+                    </p>
                     <div class="srs-box-visualizer">
-                        <div class="srs-box-col">
+                        <div class="srs-box-col stage-1">
                             <div class="srs-box-title">Box 1</div>
                             <div class="srs-box-count">${srsBoxes[1]}</div>
                         </div>
-                        <div class="srs-box-col">
+                        <div class="srs-box-col stage-2">
                             <div class="srs-box-title">Box 2</div>
                             <div class="srs-box-count">${srsBoxes[2]}</div>
                         </div>
-                        <div class="srs-box-col">
+                        <div class="srs-box-col stage-3">
                             <div class="srs-box-title">Box 3</div>
                             <div class="srs-box-count">${srsBoxes[3]}</div>
                         </div>
-                        <div class="srs-box-col">
+                        <div class="srs-box-col stage-4">
                             <div class="srs-box-title">Box 4</div>
                             <div class="srs-box-count">${srsBoxes[4]}</div>
                         </div>
-                        <div class="srs-box-col">
+                        <div class="srs-box-col stage-5">
                             <div class="srs-box-title">Box 5</div>
                             <div class="srs-box-count">${srsBoxes[5]}</div>
                         </div>
@@ -2328,17 +2596,109 @@ async function loadProgressDashboard() {
                 </div>
             </div>
 
-            <!-- ACHIEVEMENTS CABINET -->
-            <div class="glass-card" style="padding:1.5rem;">
-                <h4 style="font-size:1.1rem;font-weight:800;margin-bottom:1rem;"><i class="fa-solid fa-trophy" style="color:var(--accent-amber);"></i> Achievement Badges (${unlockedIds.size}/${achievementsList.length})</h4>
-                <div class="trophy-grid">
-                    ${trophiesHtml}
+            <!-- ACHIEVEMENTS & TROPHIES CABINET -->
+            <div class="glass-card" style="padding:1.75rem;">
+                <div class="badge-cabinet-header">
+                    <div>
+                        <h4 style="font-size:1.2rem;font-weight:900;display:flex;align-items:center;gap:0.6rem;color:var(--text-main);">
+                            <i class="fa-solid fa-trophy" style="color:var(--accent-amber);"></i>
+                            Erfolgs-Trophäen &amp; Abzeichen (${unlockedCount}/${totalBadges})
+                        </h4>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">
+                            Klicke auf ein Abzeichen für Details, XP-Boni und Meilensteine.
+                        </div>
+                    </div>
+                    
+                    <div class="badge-filter-bar" id="badgeFilterBar">
+                        <button class="badge-filter-pill active" data-filter="all">Alle (${totalBadges})</button>
+                        <button class="badge-filter-pill" data-filter="unlocked">Freigeschaltet (${unlockedCount})</button>
+                        <button class="badge-filter-pill" data-filter="locked">In Arbeit (${totalBadges - unlockedCount})</button>
+                        <button class="badge-filter-pill" data-filter="vocab">Vokabeln</button>
+                        <button class="badge-filter-pill" data-filter="chat">Dialog</button>
+                        <button class="badge-filter-pill" data-filter="writing">Schreiben &amp; Lesen</button>
+                        <button class="badge-filter-pill" data-filter="streak">Serien &amp; XP</button>
+                    </div>
+                </div>
+
+                <div class="trophy-grid" id="trophyGridContainer">
+                    ${generateTrophyCardsHtml('all')}
                 </div>
             </div>
         `;
 
+        // Event: Edit profile shortcut
         document.getElementById('editProfileShortcutBtn')?.addEventListener('click', () => {
             openPanel('settings');
+        });
+
+        // Event: Badge Filtering
+        const filterBar = document.getElementById('badgeFilterBar');
+        const gridContainer = document.getElementById('trophyGridContainer');
+        if (filterBar && gridContainer) {
+            filterBar.querySelectorAll('.badge-filter-pill').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBar.querySelectorAll('.badge-filter-pill').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const f = btn.dataset.filter || 'all';
+                    gridContainer.innerHTML = generateTrophyCardsHtml(f);
+                    bindBadgeInspectEvents();
+                });
+            });
+        }
+
+        // Event: Badge Inspection Modal
+        function bindBadgeInspectEvents() {
+            gridContainer.querySelectorAll('.trophy-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const badgeId = card.dataset.badgeId;
+                    const badge = achievementsList.find(a => a.id === badgeId);
+                    if (!badge) return;
+
+                    const isUnlocked = unlockedMap.has(badgeId);
+                    const modal = document.getElementById('badgeInspectModal');
+                    if (!modal) return;
+
+                    document.getElementById('modalBadgeIcon').textContent = badge.icon;
+                    document.getElementById('modalBadgeTitle').textContent = badge.title;
+                    document.getElementById('modalBadgeDesc').textContent = badge.desc;
+
+                    const tierEl = document.getElementById('modalBadgeTier');
+                    tierEl.className = `trophy-tier-tag ${badge.tier}`;
+                    tierEl.textContent = `${badge.tier.toUpperCase()} TIER`;
+
+                    const rewardEl = document.getElementById('modalBadgeReward');
+                    rewardEl.textContent = `+${badge.xpReward} XP Belohnung`;
+
+                    const statusLabel = document.getElementById('modalBadgeStatusLabel');
+                    const percentEl = document.getElementById('modalBadgePercent');
+                    const fillEl = document.getElementById('modalBadgeFill');
+
+                    if (isUnlocked) {
+                        statusLabel.innerHTML = '<span style="color:var(--accent-emerald);"><i class="fa-solid fa-circle-check"></i> Bereits Freigeschaltet!</span>';
+                        percentEl.textContent = '100%';
+                        fillEl.style.width = '100%';
+                        fillEl.style.background = 'var(--accent-emerald)';
+                        launchConfetti();
+                    } else {
+                        const pct = Math.min(99, Math.round((Math.min(badge.current, badge.target) / badge.target) * 100));
+                        statusLabel.textContent = `Fortschritt: ${badge.current} / ${badge.target} ${badge.unit}`;
+                        percentEl.textContent = `${pct}%`;
+                        fillEl.style.width = `${pct}%`;
+                        fillEl.style.background = 'var(--accent-cyan)';
+                    }
+
+                    modal.classList.add('active');
+                });
+            });
+        }
+        bindBadgeInspectEvents();
+
+        // Close modal handlers
+        const closeBtn = document.getElementById('closeBadgeModalBtn');
+        const modal = document.getElementById('badgeInspectModal');
+        closeBtn?.addEventListener('click', () => modal?.classList.remove('active'));
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('active');
         });
 
     } catch (err) {
@@ -2353,6 +2713,8 @@ let selectedAvatar = auth.avatar || '🇩🇪';
 
 function loadSettingsModal() {
     document.getElementById('settingsUsernameField').value = auth.username || '';
+    const nickField = document.getElementById('settingsNicknameField');
+    if (nickField) nickField.value = (auth.nickname || auth.username || '').replace(/^@/, '');
     document.getElementById('settingsLevelSelect').value   = currentLevel;
     document.getElementById('dailyGoalXpSlider').value     = auth.dailyGoalXp || 30;
     document.getElementById('dailyGoalXpLabel').textContent = `${auth.dailyGoalXp || 30} XP`;
@@ -2374,7 +2736,7 @@ async function fetchInstalledModels() {
         const d = await r.json();
         const select = document.getElementById('settingsModelSelect');
         if (d.models && d.models.length && select) {
-            const activeModel = auth.selectedModel || d.currentDefault || 'mistral-nemo:12b';
+            const activeModel = auth.selectedModel || d.currentDefault || '';
             select.innerHTML = d.models.map(m => `
                 <option value="${esc(m.name)}" ${m.name === activeModel ? 'selected' : ''}>
                     ${esc(m.name)} (${m.size || 'Local LLM'})
@@ -2479,9 +2841,10 @@ document.getElementById('testModelBtn')?.addEventListener('click', async () => {
 
 document.getElementById('saveSettingsBtn')?.addEventListener('click', async () => {
     const username = document.getElementById('settingsUsernameField')?.value.trim() || auth.username;
+    const nickname = document.getElementById('settingsNicknameField')?.value.trim() || auth.nickname || username;
     const newLevel = document.getElementById('settingsLevelSelect')?.value || currentLevel;
     const dailyGoalXp = Number(document.getElementById('dailyGoalXpSlider')?.value || 30);
-    const selectedModel = document.getElementById('settingsModelSelect')?.value || 'qwen3:14b';
+    const selectedModel = document.getElementById('settingsModelSelect')?.value || auth.selectedModel || '';
     const btn = document.getElementById('saveSettingsBtn');
 
     btn.disabled = true;
@@ -2494,6 +2857,7 @@ document.getElementById('saveSettingsBtn')?.addEventListener('click', async () =
             body: JSON.stringify({
                 userId: USER_ID,
                 username,
+                nickname,
                 avatar: selectedAvatar,
                 currentLevel: newLevel,
                 dailyGoalXp,

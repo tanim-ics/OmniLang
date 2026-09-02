@@ -43,9 +43,6 @@
             <button class="nav-tab-btn" data-view="progress">
                 <i class="fa-solid fa-chart-line"></i> Analytics
             </button>
-            <button class="nav-tab-btn" data-view="settings">
-                <i class="fa-solid fa-gear"></i> Settings
-            </button>
         </nav>
 
         <div class="nav-right">
@@ -59,17 +56,38 @@
             </div>
             <div class="xp-chip" id="navModelChip" style="cursor:pointer;background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.3);color:var(--accent-cyan);" title="Active Local Ollama Model — Click to switch">
                 <i class="fa-solid fa-microchip"></i>
-                <span id="navModelName">qwen3.5:9b</span>
+                <span id="navModelName">No model</span>
             </div>
             <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
                 <i class="fa-solid fa-moon"></i>
             </button>
-            <button class="settings-btn" id="settingsQuickBtn" title="User Settings">
+            <button class="settings-btn" id="settingsQuickBtn" title="Settings &amp; Preferences">
                 <i class="fa-solid fa-sliders"></i>
             </button>
-            <div class="user-profile-btn" id="navUserChip" title="View Profile">
-                <div class="user-avatar-small" id="navAvatar">🇩🇪</div>
-                <span class="user-name-small" id="navUsername">Learner</span>
+
+            <div class="user-menu-wrapper" style="position:relative;">
+                <div class="user-profile-btn" id="navUserChip" title="User Menu">
+                    <div class="user-avatar-small" id="navAvatar">🇩🇪</div>
+                    <span class="user-nickname-pill" id="navNickname">@Learner</span>
+                    <i class="fa-solid fa-chevron-down" style="font-size:0.6rem;color:var(--text-muted);margin-left:3px;"></i>
+                </div>
+                <div class="user-dropdown-menu" id="userDropdownMenu" style="display:none;">
+                    <div class="user-dropdown-header" style="padding:0.75rem 1rem;">
+                        <div id="userDropdownName" style="font-weight:800;color:var(--text-main);font-size:0.9rem;">Learner</div>
+                        <div id="userDropdownHandle" style="font-size:0.75rem;color:var(--accent-cyan);font-weight:700;margin-top:2px;">@learner</div>
+                    </div>
+                    <div style="height:1px;background:var(--border-glass);margin:0.25rem 0;"></div>
+                    <button class="dropdown-item-btn" id="dropdownProfileBtn" style="width:100%;text-align:left;background:none;border:none;padding:0.6rem 1rem;color:var(--text-secondary);font-size:0.8125rem;font-weight:600;display:flex;align-items:center;gap:0.6rem;cursor:pointer;">
+                        <i class="fa-solid fa-sliders" style="color:var(--accent-cyan);"></i> Profile &amp; Settings
+                    </button>
+                    <button class="dropdown-item-btn" id="dropdownAnalyticsBtn" style="width:100%;text-align:left;background:none;border:none;padding:0.6rem 1rem;color:var(--text-secondary);font-size:0.8125rem;font-weight:600;display:flex;align-items:center;gap:0.6rem;cursor:pointer;">
+                        <i class="fa-solid fa-chart-line" style="color:var(--accent-amber);"></i> Learning Journey
+                    </button>
+                    <div style="height:1px;background:var(--border-glass);margin:0.25rem 0;"></div>
+                    <button class="dropdown-item-btn" id="dropdownLogoutBtn" style="width:100%;text-align:left;background:none;border:none;padding:0.6rem 1rem;color:var(--accent-rose);font-size:0.8125rem;font-weight:600;display:flex;align-items:center;gap:0.6rem;cursor:pointer;">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -720,6 +738,38 @@
         </div>
     </div>
 
+    <!-- MODAL: BADGE INSPECT & CELEBRATION -->
+    <div class="badge-inspect-modal" id="badgeInspectModal">
+        <div class="badge-inspect-dialog">
+            <button class="btn-ghost" id="closeBadgeModalBtn" style="position:absolute;top:1rem;right:1rem;font-size:1.2rem;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="badge-inspect-avatar-halo" id="modalBadgeIcon">🏆</div>
+            <div style="margin-bottom:0.5rem;">
+                <span class="trophy-tier-tag gold" id="modalBadgeTier">Gold Tier</span>
+            </div>
+            <h3 id="modalBadgeTitle" style="font-size:1.45rem;font-weight:900;color:var(--text-main);margin-bottom:0.5rem;">Titel</h3>
+            <p id="modalBadgeDesc" style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:1.25rem;line-height:1.5;">Description</p>
+            
+            <div id="modalBadgeProgressBox" style="background:rgba(255,255,255,0.04);border:1px solid var(--border-glass);border-radius:var(--radius-lg);padding:0.85rem 1rem;margin-bottom:1.25rem;">
+                <div style="display:flex;justify-content:space-between;font-size:0.8125rem;font-weight:700;margin-bottom:0.4rem;">
+                    <span id="modalBadgeStatusLabel">Status: In Progress</span>
+                    <span id="modalBadgePercent">60%</span>
+                </div>
+                <div class="trophy-progress-track" style="height:8px;">
+                    <div class="trophy-progress-fill" id="modalBadgeFill" style="width:60%;"></div>
+                </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:center;gap:1rem;">
+                <div class="trophy-xp-bonus" id="modalBadgeReward" style="font-size:0.9rem;padding:5px 14px;font-weight:800;border-radius:var(--radius-full);">+100 XP</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Canvas -->
+    <canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:99999;width:100vw;height:100vh;display:none;"></canvas>
+
     <!-- MODAL / PANEL: SETTINGS & PROFILE -->
     <div class="module-overlay-panel" id="panel-settings">
         <header class="panel-header">
@@ -753,20 +803,27 @@
                     </div>
                 </div>
 
-                <!-- Username & Level -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <!-- Username, Nickname & Level -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
                     <div>
-                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">Username</label>
-                        <input type="text" class="select-control-input" id="settingsUsernameField" placeholder="Username">
+                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">Display Name</label>
+                        <input type="text" class="select-control-input" id="settingsUsernameField" placeholder="Full Name">
                     </div>
                     <div>
-                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">Current CEFR Level</label>
+                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">Nickname</label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:700;">@</span>
+                            <input type="text" class="select-control-input" id="settingsNicknameField" placeholder="nickname" style="padding-left:1.8rem;">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">CEFR Level</label>
                         <select class="select-control-input" id="settingsLevelSelect">
-                            <option value="A1">A1 — Absolute Beginner</option>
-                            <option value="A2">A2 — Elementary German</option>
-                            <option value="B1">B1 — Intermediate German</option>
-                            <option value="B2">B2 — Upper Intermediate</option>
-                            <option value="C1">C1 — Advanced Fluency &amp; Academic</option>
+                            <option value="A1">A1 — Beginner</option>
+                            <option value="A2">A2 — Elementary</option>
+                            <option value="B1">B1 — Intermediate</option>
+                            <option value="B2">B2 — Upper Int.</option>
+                            <option value="C1">C1 — Advanced</option>
                         </select>
                     </div>
                 </div>
@@ -788,9 +845,7 @@
                         </button>
                     </div>
                     <select class="select-control-input" id="settingsModelSelect">
-                        <option value="mistral-nemo:12b" selected>mistral-nemo:12b (12.2B parameters — High Precision &amp; Immersion)</option>
-                        <option value="qwen3.5:9b">qwen3.5:9b (9.7B parameters — Multilingual Balanced)</option>
-                        <option value="llama3.2:3b">llama3.2:3b (3.2B parameters — Fast &amp; Light)</option>
+                        <option value="">Loading installed models…</option>
                     </select>
                     <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:0.25rem;">
                         Selecting any model immediately switches the active LLM engine across Chat, SRS, Graded Reading, and Essay Evaluation.

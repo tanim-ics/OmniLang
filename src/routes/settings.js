@@ -17,13 +17,9 @@ router.get('/models', async (_req, res) => {
         const response = await fetch(OLLAMA_TAGS_ENDPOINT, { signal: AbortSignal.timeout(3000) });
         if (!response.ok) {
             return res.json({
-                models: [
-                    { name: 'mistral-nemo:12b', size: '12.2B', details: { family: 'llama' } },
-                    { name: 'qwen3.5:9b', size: '9.7B', details: { family: 'qwen35' } },
-                    { name: 'llama3.2:3b', size: '3.2B', details: { family: 'llama' } }
-                ],
+                models: [],
                 connected: false,
-                currentDefault: process.env.OLLAMA_MODEL || 'mistral-nemo:12b'
+                currentDefault: process.env.OLLAMA_MODEL || ''
             });
         }
 
@@ -39,20 +35,16 @@ router.get('/models', async (_req, res) => {
         res.json({
             models,
             connected: true,
-            currentDefault: process.env.OLLAMA_MODEL || 'mistral-nemo:12b'
+            currentDefault: process.env.OLLAMA_MODEL || ''
         });
 
     } catch (err) {
         console.warn('[settings] Ollama tags query failed:', err.message);
         res.json({
-            models: [
-                { name: 'mistral-nemo:12b', size: '12.2B', family: 'llama' },
-                { name: 'qwen3.5:9b', size: '9.7B', family: 'qwen35' },
-                { name: 'llama3.2:3b', size: '3.2B', family: 'llama' }
-            ],
+            models: [],
             connected: false,
             error: err.message,
-            currentDefault: process.env.OLLAMA_MODEL || 'mistral-nemo:12b'
+            currentDefault: process.env.OLLAMA_MODEL || ''
         });
     }
 });
@@ -95,7 +87,7 @@ router.post('/set-model', async (req, res) => {
 router.post('/test-model', async (req, res) => {
     try {
         const { model } = req.body;
-        const testModel = model || process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
+        const testModel = model || process.env.OLLAMA_MODEL || '';
         const start = Date.now();
 
         const response = await fetch(OLLAMA_CHAT_ENDPOINT, {

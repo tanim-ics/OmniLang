@@ -47,7 +47,7 @@ async function runSetup() {
             fs.copyFileSync(envExamplePath, envPath);
             log('✓ Created .env configuration from .env.example', colors.green);
         } else {
-            const defaultEnv = `PORT=5001\nMONGO_URI=mongodb://127.0.0.1:27017/tanim_german\nOLLAMA_ENDPOINT=http://localhost:11434/api/chat\nOLLAMA_MODEL=mistral-nemo:12b\nCUDA_VISIBLE_DEVICES=0\nOLLAMA_FLASH_ATTENTION=1\nOLLAMA_NUM_PARALLEL=1\nOLLAMA_KEEP_ALIVE=24h\nOLLAMA_ORIGINS=*\n`;
+            const defaultEnv = `PORT=5001\nMONGO_URI=mongodb://127.0.0.1:27017/tanim_german\nOLLAMA_ENDPOINT=http://localhost:11434/api/chat\nOLLAMA_MODEL=\nCUDA_VISIBLE_DEVICES=0\nOLLAMA_FLASH_ATTENTION=1\nOLLAMA_NUM_PARALLEL=1\nOLLAMA_KEEP_ALIVE=24h\nOLLAMA_ORIGINS=*\n`;
             fs.writeFileSync(envPath, defaultEnv);
             log('✓ Generated default .env file', colors.green);
         }
@@ -95,21 +95,32 @@ async function runSetup() {
             const models = (tagsRes.models || []).map(m => m.name);
             log(`  Available local models: ${models.join(', ') || 'none'}`, colors.cyan);
 
-            let configuredModel = 'mistral-nemo:12b';
+            let configuredModel = '';
             if (fs.existsSync(envPath)) {
                 const envContent = fs.readFileSync(envPath, 'utf8');
                 const match = envContent.match(/^OLLAMA_MODEL=(.*)$/m);
                 if (match && match[1]) configuredModel = match[1].trim().replace(/['"]/g, '');
             }
 
-            const hasConfigured = models.some(m => m.startsWith(configuredModel.split(':')[0]));
-            if (hasConfigured) {
-                log(`✓ Configured model "${configuredModel}" is installed and ready`, colors.green);
-            } else if (models.length > 0) {
-                log(`ℹ️ Configured model "${configuredModel}" not found, but "${models[0]}" is available.`, colors.cyan);
-            } else {
-                log(`⚠️ No models found in Ollama. Pull a model via: ollama pull mistral-nemo:12b`, colors.yellow);
+            if (models.length === 0) {
+                log('\n  ⚠️  No models found in Ollama. OmniLang works with any Ollama-compatible model.', colors.yellow);
+                log('  Choose one that fits your hardware and run:\n', colors.cyan);
+                log('    ollama pull mistral-nemo:12b   (7.1 GB — high quality)', colors.bold);
+                log('    ollama pull qwen2.5:7b         (4.7 GB — fast & capable)', colors.bold);
+                log('    ollama pull llama3.2:3b        (2.0 GB — lightweight)', colors.bold);
+                log('    ollama pull gemma3:4b          (3.3 GB — Google)', colors.bold);
+                log('\n  Or select a model from the in-app onboarding after launch.', colors.cyan);
                 allHealthy = false;
+            } else if (configuredModel) {
+                const hasConfigured = models.some(m => m.startsWith(configuredModel.split(':')[0]));
+                if (hasConfigured) {
+                    log(`✓ Configured model "${configuredModel}" is installed and ready`, colors.green);
+                } else {
+                    log(`ℹ️  Configured model "${configuredModel}" not found, but "${models[0]}" is available.`, colors.cyan);
+                }
+            } else {
+                log(`✓ Local models available: ${models.join(', ')}`, colors.green);
+                log('  Select your model from the in-app onboarding after launch.', colors.cyan);
             }
         } catch (_) {}
     } else {

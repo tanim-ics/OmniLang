@@ -38,6 +38,9 @@ const achievementSchema = new mongoose.Schema({
     title:       { type: String, required: true },
     description: { type: String, required: true },
     icon:        { type: String, required: true },
+    tier:        { type: String, enum: ['bronze', 'silver', 'gold', 'diamond'], default: 'bronze' },
+    category:    { type: String, default: 'general' },
+    xpReward:    { type: Number, default: 25 },
     unlockedAt:  { type: Date,   default: Date.now }
 }, { _id: false });
 
@@ -59,6 +62,15 @@ const dailyModuleStatusSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
     userId:       { type: String, required: true, unique: true, index: true },
     username:     { type: String, default: 'Learner', trim: true },
+    nickname:     { type: String, trim: true, default: '' },
+    email:        { type: String, trim: true, lowercase: true, sparse: true, index: true },
+    passwordHash: { type: String, select: false },
+    passwordSalt: { type: String, select: false },
+    authProvider: { type: String, enum: ['local', 'google', 'apple', 'guest'], default: 'local' },
+    // Email verification
+    isVerified:          { type: Boolean, default: false },
+    verificationCode:    { type: String, select: false },
+    verificationExpiry:  { type: Date, select: false },
     currentLevel: {
         type: String,
         enum: ['A1', 'A2', 'B1', 'B2', 'C1'],
@@ -78,7 +90,7 @@ const userSchema = new mongoose.Schema({
     // User Settings & Preferences
     dailyGoalMinutes:  { type: Number, default: 15 },
     dailyGoalXp:       { type: Number, default: 30 },
-    selectedModel:     { type: String, default: 'mistral-nemo:12b' },
+    selectedModel:     { type: String, default: '' },
     theme:             { type: String, default: 'dark-glass' },
     ttsVoice:          { type: String, default: 'de-DE' },
     ttsRate:           { type: Number, default: 0.95 },

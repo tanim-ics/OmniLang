@@ -230,28 +230,35 @@ if check_ollama; then
     AVAILABLE_MODELS=$(curl -s http://127.0.0.1:11434/api/tags 2>/dev/null | grep -o '"name":"[^"]*"' | cut -d '"' -f4 || true)
     
     CONFIGURED_MODEL=$(grep -E "^OLLAMA_MODEL=" .env 2>/dev/null | cut -d '=' -f2 | tr -d '"' | tr -d "'" || echo "")
-    CONFIGURED_MODEL=${CONFIGURED_MODEL:-mistral-nemo:12b}
 
-    # Check if configured model or any compatible model is already present
+    # Check if any models are already present
     MODEL_READY=0
-    if echo "$AVAILABLE_MODELS" | grep -q "${CONFIGURED_MODEL%%:*}"; then
-        MODEL_READY=1
-        echo -e "  ${GREEN}✓ Configured AI Model \"${CONFIGURED_MODEL}\" is ready in local library${NC}"
-    elif [ -n "$AVAILABLE_MODELS" ]; then
-        FIRST_MODEL=$(echo "$AVAILABLE_MODELS" | head -n 1)
-        echo -e "  ${GREEN}✓ Detected installed local model: \"${FIRST_MODEL}\"${NC}"
-        echo -e "  ${CYAN}  Adopting \"${FIRST_MODEL}\" as active model in .env${NC}"
-        sed -i "s/^OLLAMA_MODEL=.*/OLLAMA_MODEL=${FIRST_MODEL}/" .env
-        MODEL_READY=1
+    if [ -n "$AVAILABLE_MODELS" ]; then
+        if [ -n "$CONFIGURED_MODEL" ] && echo "$AVAILABLE_MODELS" | grep -q "${CONFIGURED_MODEL%%:*}"; then
+            MODEL_READY=1
+            echo -e "  ${GREEN}✓ Configured AI Model \"${CONFIGURED_MODEL}\" is ready in local library${NC}"
+        else
+            FIRST_MODEL=$(echo "$AVAILABLE_MODELS" | head -n 1)
+            echo -e "  ${GREEN}✓ Detected installed local model: \"${FIRST_MODEL}\"${NC}"
+            echo -e "  ${CYAN}  Adopting \"${FIRST_MODEL}\" as active model in .env${NC}"
+            sed -i "s/^OLLAMA_MODEL=.*/OLLAMA_MODEL=${FIRST_MODEL}/" .env
+            MODEL_READY=1
+        fi
     fi
 
     if [ $MODEL_READY -eq 0 ]; then
-        echo -e "  ${YELLOW}No local LLM found. Pulling model \"mistral-nemo:12b\"...${NC}"
-        echo -e "  ${CYAN}(This is a one-time download for German conversations & grammar evaluation)${NC}"
-        ollama pull mistral-nemo:12b || {
-            echo -e "  ${YELLOW}⚠️ Model pull was interrupted. You can pull anytime via: ollama pull mistral-nemo:12b${NC}"
-        }
-        sed -i 's/^OLLAMA_MODEL=.*/OLLAMA_MODEL=mistral-nemo:12b/' .env
+        echo -e "\n  ${YELLOW}⚠️  No local AI models found in Ollama.${NC}"
+        echo -e "  ${CYAN}OmniLang works with any Ollama-compatible language model."
+        echo -e "  Choose and download one that fits your hardware:\n${NC}"
+        echo -e "  ${BOLD}Model                    Size     Command${NC}"
+        echo -e "  ─────────────────────────────────────────────────────"
+        echo -e "  mistral-nemo:12b         7.1 GB   ${CYAN}ollama pull mistral-nemo:12b${NC}"
+        echo -e "  qwen2.5:7b               4.7 GB   ${CYAN}ollama pull qwen2.5:7b${NC}"
+        echo -e "  llama3.2:3b              2.0 GB   ${CYAN}ollama pull llama3.2:3b${NC}"
+        echo -e "  gemma3:4b                3.3 GB   ${CYAN}ollama pull gemma3:4b${NC}"
+        echo -e "  ─────────────────────────────────────────────────────"
+        echo -e "  ${YELLOW}After downloading, restart with: ./setup.sh${NC}"
+        echo -e "  ${CYAN}Or select a model from within the app after launch.${NC}\n"
     fi
 else
     echo -e "  ${YELLOW}⚠️  Ollama service not responding yet. The web app will auto-retry connecting on boot.${NC}"

@@ -4,7 +4,7 @@ import Vocabulary from '../models/Vocabulary.js';
 import { callOllama } from '../utils/ollama.js';
 
 const router = express.Router();
-const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
+const DEFAULT_MODEL = process.env.OLLAMA_MODEL || '';
 
 // Curated default daily recommendations
 const FALLBACK_RECOMMENDATIONS = {

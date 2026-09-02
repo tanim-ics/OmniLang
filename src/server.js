@@ -22,7 +22,7 @@ const __dirname  = dirname(__filename);
 const app       = express();
 const PORT      = process.env.PORT      || 5001;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tanim_german';
-const ACTIVE_MODEL = process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
+const ACTIVE_MODEL = process.env.OLLAMA_MODEL || '';
 
 const allowedOrigins = process.env.OLLAMA_ORIGINS || '*';
 app.use(cors({ origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',') }));
@@ -90,8 +90,12 @@ mongoose
         // 1. Ensure Ollama server daemon is running
         await ensureOllamaRunning();
 
-        // 2. Pre-warm the configured active model into memory
-        preloadModel(ACTIVE_MODEL).catch(() => {});
+        // 2. Pre-warm the configured active model into memory (only if a model is set)
+        if (ACTIVE_MODEL) {
+            preloadModel(ACTIVE_MODEL).catch(() => {});
+        } else {
+            console.log('ℹ️  No default Ollama model configured — select one via the app onboarding or set OLLAMA_MODEL in .env');
+        }
 
         const server = app.listen(PORT, () =>
             console.log(`✓ OmniLang German Learning Platform running → http://localhost:${PORT}`)

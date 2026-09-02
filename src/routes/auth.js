@@ -1,7 +1,44 @@
 import express from 'express';
-import { randomBytes } from 'crypto';
+import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import User from '../models/User.js';
 import Vocabulary from '../models/Vocabulary.js';
+
+// ---- OTP email sender (nodemailer when SMTP configured; console fallback for local dev) ----
+async function sendOtpEmail(toEmail, otp, nickname) {
+    const smtpHost = process.env.SMTP_HOST;
+    if (smtpHost) {
+        try {
+            const nodemailer = await import('nodemailer');
+            const transporter = nodemailer.createTransport({
+                host: process.env.SMTP_HOST,
+                port: Number(process.env.SMTP_PORT) || 587,
+                secure: false,
+                auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+            });
+            await transporter.sendMail({
+                from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                to: toEmail,
+                subject: 'Your OmniLang Verification Code',
+                html: `
+                    <div style="font-family:sans-serif;max-width:460px;margin:auto;padding:2rem;background:#0b0f19;color:#f8fafc;border-radius:16px;">
+                        <h2 style="color:#6366f1;">🌐 OmniLang</h2>
+                        <p>Hi <strong>@${nickname}</strong>,</p>
+                        <p>Your one-time verification code is:</p>
+                        <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.4rem;color:#06b6d4;padding:1rem 0;">${otp}</div>
+                        <p style="color:#94a3b8;">This code expires in <strong>15 minutes</strong>. Do not share it with anyone.</p>
+                    </div>`
+            });
+            return true;
+        } catch (err) {
+            console.warn('[auth] SMTP send failed, falling back to console:', err.message);
+        }
+    }
+    // Local dev fallback — print to console
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📧  OTP CODE for ${toEmail} (@${nickname}): ${otp}`);
+    console.log(`${'='.repeat(60)}\n`);
+    return true;
+}
 
 const router = express.Router();
 
@@ -29,21 +66,44 @@ export function getOrCreateDailyStatus(user, dateStr = new Date().toISOString().
     return todayStatus;
 }
 
-// Helper to award achievements
+// Helper to award achievements with tiers and bonus XP
 export async function checkAndAwardAchievements(user) {
     const awards = [
-        { id: 'first_login',  title: 'Willkommen!',       description: 'Started your German journey', icon: '🇩🇪', condition: () => true },
-        { id: 'first_word',   title: 'Wortschatz Starter', description: 'Learned your first vocabulary word', icon: '🌱', condition: () => (user.totalWordsLearned || 0) >= 1 },
-        { id: 'vocab_10',     title: 'Word Collector',     description: 'Learned 10+ German words', icon: '📚', condition: () => (user.totalWordsLearned || 0) >= 10 },
-        { id: 'vocab_25',     title: 'Lexicon Master',     description: 'Learned 25+ German words', icon: '🧠', condition: () => (user.totalWordsLearned || 0) >= 25 },
-        { id: 'first_chat',   title: 'Plaudertasche',      description: 'Sent your first message to Lukas', icon: '💬', condition: () => (user.totalMessages || 0) >= 1 },
-        { id: 'chat_15',      title: 'German Speaker',     description: 'Exchanged 15+ messages with AI', icon: '🎙️', condition: () => (user.totalMessages || 0) >= 15 },
-        { id: 'first_essay',  title: 'Schriftsteller',     description: 'Submitted your first German essay for grading', icon: '✍️', condition: () => (user.essaysGraded || 0) >= 1 },
-        { id: 'streak_3',     title: 'Disziplin',          description: 'Maintained a 3-day study streak', icon: '🔥', condition: () => (user.streak || 0) >= 3 },
-        { id: 'streak_7',     title: 'Feuer und Flamme',   description: 'Reached a 7-day study streak', icon: '⚡', condition: () => (user.streak || 0) >= 7 },
-        { id: 'xp_100',       title: 'XP Pioneer',         description: 'Earned over 100 XP', icon: '🏆', condition: () => (user.xp || 0) >= 100 },
-        { id: 'xp_500',       title: 'Master Scholar',     description: 'Earned over 500 XP', icon: '👑', condition: () => (user.xp || 0) >= 500 },
-        { id: 'daily_all',    title: 'Daily Champion',     description: 'Completed all 5 practice modules in a single day', icon: '⭐', condition: () => (user.dailyModuleStatus || []).some(d => d.vocabCompleted && d.chatCompleted && d.writingCompleted && d.readingCompleted) }
+        // General & Onboarding
+        { id: 'first_login',  title: 'Willkommen!',             description: 'Begann die Reise in die deutsche Sprache', icon: '🇩🇪', tier: 'bronze', category: 'general', xpReward: 25, condition: () => true },
+        { id: 'daily_all',    title: 'Tages-Champion',           description: 'Alle 4 Lernmodule an einem einzigen Tag gemeistert', icon: '⭐', tier: 'gold', category: 'general', xpReward: 150, condition: () => (user.dailyModuleStatus || []).some(d => d.vocabCompleted && d.chatCompleted && d.writingCompleted && d.readingCompleted) },
+        
+        // Vocabulary & SRS
+        { id: 'first_word',   title: 'Wortschatz Starter',       description: 'Dein allererstes deutsches Wort gelernt', icon: '🌱', tier: 'bronze', category: 'vocab', xpReward: 25, condition: () => (user.totalWordsLearned || 0) >= 1 },
+        { id: 'vocab_10',     title: 'Wortsammler',             description: '10+ Vokabeln im Langzeitgedächtnis verankert', icon: '📚', tier: 'bronze', category: 'vocab', xpReward: 50, condition: () => (user.totalWordsLearned || 0) >= 10 },
+        { id: 'vocab_25',     title: 'Wortschatz-Kenner',       description: '25+ Wörter aktiv im Leitner-System', icon: '🧠', tier: 'silver', category: 'vocab', xpReward: 75, condition: () => (user.totalWordsLearned || 0) >= 25 },
+        { id: 'vocab_50',     title: 'Lexikon-Meister',         description: '50+ Wörter gemeistert — starker Wortschatz!', icon: '🏛️', tier: 'gold', category: 'vocab', xpReward: 125, condition: () => (user.totalWordsLearned || 0) >= 50 },
+        { id: 'vocab_100',    title: 'Sprach-Bibliothekar',     description: '100+ Wörter gelernt — wahrer Wortschatz-Gigant!', icon: '👑', tier: 'diamond', category: 'vocab', xpReward: 250, condition: () => (user.totalWordsLearned || 0) >= 100 },
+
+        // Conversation & AI Immersion
+        { id: 'first_chat',   title: 'Plaudertasche',            description: 'Die erste Nachricht mit Lukas gewechselt', icon: '💬', tier: 'bronze', category: 'chat', xpReward: 25, condition: () => (user.totalMessages || 0) >= 1 },
+        { id: 'chat_15',      title: 'Deutscher Redner',         description: '15+ Gesprächsrunden mit der KI geführt', icon: '🎙️', tier: 'silver', category: 'chat', xpReward: 75, condition: () => (user.totalMessages || 0) >= 15 },
+        { id: 'chat_50',      title: 'Lukas’ Bester Freund',     description: '50+ Nachrichten — fließende Dialogbereitschaft!', icon: '🗣️', tier: 'gold', category: 'chat', xpReward: 150, condition: () => (user.totalMessages || 0) >= 50 },
+        { id: 'chat_100',     title: 'Sprachgenie im Dialog',    description: '100+ Nachrichten — meisterhafte Gesprächsführung!', icon: '⚡', tier: 'diamond', category: 'chat', xpReward: 300, condition: () => (user.totalMessages || 0) >= 100 },
+
+        // Writing & Essays
+        { id: 'first_essay',  title: 'Der Schriftsteller',       description: 'Deinen ersten deutschen Aufsatz zur Bewertung eingereicht', icon: '✍️', tier: 'bronze', category: 'writing', xpReward: 30, condition: () => (user.essaysGraded || 0) >= 1 },
+        { id: 'essay_3',      title: 'Goethe-Lehrling',          description: '3+ Aufsätze mit Feedback analysiert und verbessert', icon: '📜', tier: 'silver', category: 'writing', xpReward: 80, condition: () => (user.essaysGraded || 0) >= 3 },
+        { id: 'essay_high',   title: 'Goldene Feder',           description: 'Einen Aufsatz mit 85+ Punkten absolviert', icon: '🖋️', tier: 'gold', category: 'writing', xpReward: 150, condition: () => (user.averageEssayScore || 0) >= 85 && (user.essaysGraded || 0) >= 1 },
+
+        // Graded Reading
+        { id: 'first_story',  title: 'Lesefuchs',               description: 'Deine erste interaktive Geschichte gelesen', icon: '📖', tier: 'bronze', category: 'reading', xpReward: 25, condition: () => (user.storiesRead || 0) >= 1 },
+        { id: 'stories_5',    title: 'Bücherwurm',              description: '5+ CEFR-Geschichten aufmerksam durchgearbeitet', icon: '🦉', tier: 'silver', category: 'reading', xpReward: 75, condition: () => (user.storiesRead || 0) >= 5 },
+
+        // Streaks & Dedication
+        { id: 'streak_3',     title: 'Eiserne Disziplin',        description: '3 Tage in Folge ohne Unterbrechung Deutsch geübt', icon: '🔥', tier: 'bronze', category: 'streak', xpReward: 40, condition: () => (user.streak || 0) >= 3 },
+        { id: 'streak_7',     title: 'Feuer und Flamme',         description: '7-Tage-Streak! Eine ganze Woche voller Leidenschaft', icon: '🌋', tier: 'silver', category: 'streak', xpReward: 100, condition: () => (user.streak || 0) >= 7 },
+        { id: 'streak_14',    title: 'Unaufhaltsam',             description: '14-Tage-Streak! Wahre Meisterschaft durch Gewohnheit', icon: '☄️', tier: 'gold', category: 'streak', xpReward: 200, condition: () => (user.streak || 0) >= 14 },
+
+        // XP Milestones
+        { id: 'xp_100',       title: 'XP-Pionier',              description: 'Erreiche 100 Erfahrungspunkte (XP)', icon: '🏆', tier: 'bronze', category: 'xp', xpReward: 25, condition: () => (user.xp || 0) >= 100 },
+        { id: 'xp_500',       title: 'Großer Gelehrter',        description: 'Erreiche 500 Erfahrungspunkte (XP)', icon: '🎖️', tier: 'silver', category: 'xp', xpReward: 75, condition: () => (user.xp || 0) >= 500 },
+        { id: 'xp_1000',      title: 'Titan der Sprache',       description: 'Über 1.000 XP angehäuft — Legendenstatus!', icon: '🌌', tier: 'diamond', category: 'xp', xpReward: 250, condition: () => (user.xp || 0) >= 1000 }
     ];
 
     let updated = false;
@@ -56,8 +116,13 @@ export async function checkAndAwardAchievements(user) {
                 title: award.title,
                 description: award.description,
                 icon: award.icon,
+                tier: award.tier,
+                category: award.category,
+                xpReward: award.xpReward,
                 unlockedAt: new Date()
             });
+            // Award bonus XP
+            user.xp = (user.xp || 0) + award.xpReward;
             updated = true;
         }
     }
@@ -194,40 +259,359 @@ router.get('/daily-status/:userId', async (req, res) => {
     }
 });
 
-// POST /api/auth/login — find or create user by username
-router.post('/login', async (req, res) => {
+// ---- Cryptographic Password Security Helpers ----
+function hashPassword(password, salt = randomBytes(16).toString('hex')) {
+    const hash = scryptSync(password, salt, 64).toString('hex');
+    return { hash, salt };
+}
+
+function verifyPassword(password, storedHash, storedSalt) {
+    if (!password || !storedHash || !storedSalt) return false;
     try {
-        const { username, level, avatar } = req.body;
-        if (!username || !username.trim()) {
-            return res.status(400).json({ error: 'Username is required' });
+        const computedHash = scryptSync(password, storedSalt, 64).toString('hex');
+        const hashBuffer = Buffer.from(storedHash, 'hex');
+        const computedBuffer = Buffer.from(computedHash, 'hex');
+        if (hashBuffer.length !== computedBuffer.length) return false;
+        return timingSafeEqual(hashBuffer, computedBuffer);
+    } catch {
+        return false;
+    }
+}
+
+function formatUserPayload(user, token = null) {
+    const cleanNick = user.nickname || user.username || 'Learner';
+    return {
+        userId:            user.userId,
+        username:          user.username || 'Learner',
+        nickname:          cleanNick.startsWith('@') ? cleanNick : `@${cleanNick}`,
+        email:             user.email || '',
+        authProvider:      user.authProvider || 'local',
+        currentLevel:      user.currentLevel || 'A2',
+        streak:            user.streak || 1,
+        xp:                user.xp || 0,
+        totalWordsLearned: user.totalWordsLearned || 0,
+        totalMessages:     user.totalMessages || 0,
+        essaysGraded:      user.essaysGraded || 0,
+        averageEssayScore: user.averageEssayScore || 0,
+        storiesRead:       user.storiesRead || 0,
+        avatar:            user.avatar || '🇩🇪',
+        theme:             user.theme || 'dark-glass',
+        dailyGoalMinutes:  user.dailyGoalMinutes || 15,
+        dailyGoalXp:       user.dailyGoalXp || 30,
+        selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || '',
+        token:             token || ('tk_' + randomBytes(24).toString('hex'))
+    };
+}
+
+// POST /api/auth/register — Email & Password Registration
+router.post('/register', async (req, res) => {
+    try {
+        const { email, password, username, nickname, level, avatar } = req.body;
+
+        if (!email || !email.trim()) {
+            return res.status(400).json({ error: 'Valid email address is required' });
+        }
+        const cleanEmail = email.trim().toLowerCase();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(cleanEmail)) {
+            return res.status(400).json({ error: 'Please enter a valid email format' });
+        }
+
+        if (!password || password.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+        }
+        if (!/[A-Z]/.test(password)) {
+            return res.status(400).json({ error: 'Password must contain at least one uppercase letter' });
+        }
+        if (!/[^A-Za-z0-9]/.test(password)) {
+            return res.status(400).json({ error: 'Password must contain at least one special character (e.g. ! @ # $ %)' });
+        }
+
+        // Check if email already registered
+        const existing = await User.findOne({ email: cleanEmail });
+        if (existing) {
+            return res.status(409).json({ error: 'This email is already registered. Please sign in instead.' });
         }
 
         const validLevels = ['A1', 'A2', 'B1', 'B2', 'C1'];
         const userLevel   = validLevels.includes(level) ? level : 'A2';
-        const cleanName   = username.trim().slice(0, 30);
+        const cleanNick   = (nickname || cleanEmail.split('@')[0] || 'Learner').trim().replace(/^@/, '').slice(0, 30);
+        const cleanName   = (username || cleanNick).trim().slice(0, 30);
 
-        let user = await User.findOne({
-            username: { $regex: new RegExp(`^${cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+        const { hash, salt } = hashPassword(password);
+        const userId = 'u_' + randomBytes(6).toString('hex');
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        // Generate 6-digit OTP for email verification
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        const user = new User({
+            userId,
+            username: cleanName,
+            nickname: cleanNick,
+            email: cleanEmail,
+            passwordHash: hash,
+            passwordSalt: salt,
+            authProvider: 'local',
+            isVerified: false,
+            verificationCode: otp,
+            verificationExpiry: otpExpiry,
+            currentLevel: userLevel,
+            avatar: avatar || '🇩🇪',
+            streak: 1,
+            lastActiveAt: today,
+            xp: 0,
+            dailyGoalMinutes: 15,
+            dailyGoalXp: 30,
+            selectedModel: process.env.OLLAMA_MODEL || '',
+            theme: 'dark-glass',
+            studyHistory: [{ date: todayStr, xp: 0, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
+            progressByLevel: {
+                A1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                A2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                B1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                B2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                C1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 }
+            }
         });
+
+        await checkAndAwardAchievements(user);
+        await user.save();
+
+        // Send OTP (email or console fallback)
+        await sendOtpEmail(cleanEmail, otp, cleanNick);
+
+        // Return userId & nickname for OTP screen (NOT full auth payload yet)
+        res.status(201).json({
+            requiresVerification: true,
+            userId,
+            nickname: `@${cleanNick}`,
+            email: cleanEmail,
+            message: 'Account created. Please check your email for the verification code.'
+        });
+    } catch (err) {
+        console.error('[auth] Register error:', err.message);
+        res.status(500).json({ error: 'Registration failed: ' + err.message });
+    }
+});
+
+// POST /api/auth/verify-otp — Verify 6-digit email OTP and complete account activation
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { userId, otp } = req.body;
+        if (!userId || !otp) return res.status(400).json({ error: 'userId and otp are required' });
+
+        const user = await User.findOne({ userId }).select('+verificationCode +verificationExpiry');
+        if (!user) return res.status(404).json({ error: 'Account not found' });
+        if (user.isVerified) return res.status(400).json({ error: 'Account already verified' });
+
+        if (!user.verificationCode || user.verificationCode !== String(otp).trim()) {
+            return res.status(400).json({ error: 'Invalid verification code. Please try again.' });
+        }
+        if (!user.verificationExpiry || new Date() > user.verificationExpiry) {
+            return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+        }
+
+        user.isVerified = true;
+        user.verificationCode = undefined;
+        user.verificationExpiry = undefined;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Email verified successfully!',
+            ...formatUserPayload(user)
+        });
+    } catch (err) {
+        console.error('[auth] OTP verify error:', err.message);
+        res.status(500).json({ error: 'Verification failed: ' + err.message });
+    }
+});
+
+// POST /api/auth/resend-otp — Resend verification OTP
+router.post('/resend-otp', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+        const user = await User.findOne({ userId });
+        if (!user) return res.status(404).json({ error: 'Account not found' });
+        if (user.isVerified) return res.status(400).json({ error: 'Account is already verified' });
+
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        user.verificationCode = otp;
+        user.verificationExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        await user.save();
+
+        await sendOtpEmail(user.email, otp, user.nickname || user.username);
+        res.json({ success: true, message: 'A new verification code has been sent to your email.' });
+    } catch (err) {
+        console.error('[auth] Resend OTP error:', err.message);
+        res.status(500).json({ error: 'Could not resend code: ' + err.message });
+    }
+});
+
+// POST /api/auth/login — Secure Sign-In (Email/Nickname + Password, or Guest)
+router.post('/login', async (req, res) => {
+    try {
+        const { identifier, email, username, password, level, avatar } = req.body;
+        const loginQuery = (identifier || email || username || '').trim();
+
+        if (!loginQuery) {
+            return res.status(400).json({ error: 'Email, nickname, or username is required' });
+        }
+
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginQuery);
+        let user;
+
+        if (isEmail) {
+            user = await User.findOne({ email: loginQuery.toLowerCase() }).select('+passwordHash +passwordSalt');
+        } else {
+            const rawNick = loginQuery.replace(/^@/, '').trim();
+            user = await User.findOne({
+                $or: [
+                    { nickname: { $regex: new RegExp(`^@?${rawNick.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+                    { username: { $regex: new RegExp(`^${rawNick.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+                    { email: loginQuery.toLowerCase() }
+                ]
+            }).select('+passwordHash +passwordSalt');
+        }
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        if (user) {
+            // User exists — verify password if protected
+            if (user.passwordHash) {
+                if (!password) {
+                    return res.status(401).json({ error: 'Password is required for this account' });
+                }
+                const isValid = verifyPassword(password, user.passwordHash, user.passwordSalt);
+                if (!isValid) {
+                    return res.status(401).json({ error: 'Invalid email or password' });
+                }
+                // Guard: require email verification for local accounts
+                if (user.authProvider === 'local' && !user.isVerified) {
+                    return res.status(403).json({
+                        error: 'Please verify your email before signing in.',
+                        requiresVerification: true,
+                        userId: user.userId,
+                        email: user.email
+                    });
+                }
+            } else if (password) {
+                // If existing account had no password, set it securely now
+                const { hash, salt } = hashPassword(password);
+                user.passwordHash = hash;
+                user.passwordSalt = salt;
+            }
+
+            // Streak tracking
+            const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : new Date();
+            const diffDays   = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                user.streak = (user.streak || 0) + 1;
+            } else if (diffDays > 1) {
+                user.streak = 1;
+            }
+
+            user.lastActiveAt = today;
+            if (avatar) user.avatar = avatar;
+            await checkAndAwardAchievements(user);
+            await user.save();
+
+            return res.json(formatUserPayload(user));
+        }
+
+        // If user not found and password was provided, account doesn't exist
+        if (password) {
+            return res.status(404).json({ error: 'No account found with these credentials. Please create an account.' });
+        }
+
+        // Frictionless Guest Fallback: Create account without password
+        const validLevels = ['A1', 'A2', 'B1', 'B2', 'C1'];
+        const userLevel   = validLevels.includes(level) ? level : 'A2';
+        const cleanName   = loginQuery.slice(0, 30);
+        const cleanNick   = cleanName.replace(/^@/, '');
+        const userId      = 'u_' + randomBytes(6).toString('hex');
+
+        user = new User({
+            userId,
+            username: cleanName,
+            nickname: cleanNick,
+            authProvider: 'guest',
+            currentLevel: userLevel,
+            avatar: avatar || '🇩🇪',
+            streak: 1,
+            lastActiveAt: today,
+            xp: 0,
+            dailyGoalMinutes: 15,
+            dailyGoalXp: 30,
+            selectedModel: process.env.OLLAMA_MODEL || '',
+            theme: 'dark-glass',
+            studyHistory: [{ date: todayStr, xp: 0, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
+            progressByLevel: {
+                A1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                A2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                B1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                B2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
+                C1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 }
+            }
+        });
+
+        await checkAndAwardAchievements(user);
+        await user.save();
+
+        res.json(formatUserPayload(user));
+
+    } catch (err) {
+        console.error('[auth] Login error:', err.message);
+        res.status(500).json({ error: 'Login failed: ' + err.message });
+    }
+});
+
+// POST /api/auth/social-login — Instant Google / Apple ID Authentication
+router.post('/social-login', async (req, res) => {
+    try {
+        const { provider, email, name, avatar } = req.body;
+        const validProviders = ['google', 'apple'];
+        const activeProvider = validProviders.includes(provider) ? provider : 'google';
+
+        const cleanEmail = (email || '').trim().toLowerCase();
+        let user;
+
+        if (cleanEmail) {
+            user = await User.findOne({ email: cleanEmail });
+        }
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
 
         if (!user) {
+            const rawNick = (name || cleanEmail.split('@')[0] || (activeProvider === 'google' ? 'GoogleUser' : 'AppleUser')).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
+            const cleanNick = rawNick || ('user_' + randomBytes(3).toString('hex'));
+            const cleanName = name || (activeProvider === 'google' ? 'Google Scholar' : 'Apple Scholar');
             const userId = 'u_' + randomBytes(6).toString('hex');
+
             user = new User({
                 userId,
                 username: cleanName,
-                currentLevel: userLevel,
-                avatar: avatar || '🇩🇪',
+                nickname: cleanNick,
+                email: cleanEmail || `${cleanNick}@${activeProvider}.local`,
+                authProvider: activeProvider,
+                currentLevel: 'A2',
+                avatar: avatar || (activeProvider === 'apple' ? '🍎' : '🦅'),
                 streak: 1,
                 lastActiveAt: today,
-                xp: 0,
+                xp: 50, // Welcome bonus
                 dailyGoalMinutes: 15,
                 dailyGoalXp: 30,
-                selectedModel: process.env.OLLAMA_MODEL || 'mistral-nemo:12b',
+                selectedModel: process.env.OLLAMA_MODEL || '',
                 theme: 'dark-glass',
-                studyHistory: [{ date: todayStr, xp: 0, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
+                studyHistory: [{ date: todayStr, xp: 50, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
                 progressByLevel: {
                     A1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
                     A2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
@@ -239,43 +623,50 @@ router.post('/login', async (req, res) => {
             await checkAndAwardAchievements(user);
             await user.save();
         } else {
-            // Update streak if active on a new day
+            // Update activity & streak
             const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : new Date();
             const diffDays   = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 1) {
-                user.streak = (user.streak || 0) + 1;
-            } else if (diffDays > 1) {
-                user.streak = 1; // Reset streak if missed days
-            }
+            if (diffDays === 1) user.streak = (user.streak || 0) + 1;
+            else if (diffDays > 1) user.streak = 1;
 
             user.lastActiveAt = today;
-            if (level && validLevels.includes(level)) user.currentLevel = level;
-            if (avatar) user.avatar = avatar;
-
+            if (user.authProvider === 'guest') user.authProvider = activeProvider;
             await checkAndAwardAchievements(user);
             await user.save();
         }
 
-        res.json({
-            userId:            user.userId,
-            username:          user.username,
-            currentLevel:      user.currentLevel,
-            streak:            user.streak,
-            xp:                user.xp,
-            totalWordsLearned: user.totalWordsLearned || 0,
-            totalMessages:     user.totalMessages || 0,
-            essaysGraded:      user.essaysGraded || 0,
-            avatar:            user.avatar || '🇩🇪',
-            theme:             user.theme || 'dark-glass',
-            dailyGoalMinutes:  user.dailyGoalMinutes || 15,
-            dailyGoalXp:       user.dailyGoalXp || 30,
-            selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || 'mistral-nemo:12b'
-        });
-
+        res.json(formatUserPayload(user));
     } catch (err) {
-        console.error('[auth] Login error:', err.message);
-        res.status(500).json({ error: 'Login failed: ' + err.message });
+        console.error('[auth] Social login error:', err.message);
+        res.status(500).json({ error: 'Social authentication failed: ' + err.message });
+    }
+});
+
+// POST /api/auth/update-profile — Update username, nickname, level, avatar & settings
+router.post('/update-profile', async (req, res) => {
+    try {
+        const { userId, username, nickname, currentLevel, avatar, theme, dailyGoalXp, dailyGoalMinutes, ttsRate } = req.body;
+        if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+        const user = await User.findOne({ userId });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (username) user.username = username.trim().slice(0, 30);
+        if (nickname) user.nickname = nickname.trim().replace(/^@/, '').slice(0, 30);
+        if (avatar) user.avatar = avatar;
+        if (currentLevel && ['A1', 'A2', 'B1', 'B2', 'C1'].includes(currentLevel)) {
+            user.currentLevel = currentLevel;
+        }
+        if (theme) user.theme = theme;
+        if (dailyGoalXp) user.dailyGoalXp = Number(dailyGoalXp);
+        if (dailyGoalMinutes) user.dailyGoalMinutes = Number(dailyGoalMinutes);
+        if (ttsRate) user.ttsRate = Number(ttsRate);
+
+        await user.save();
+        res.json(formatUserPayload(user));
+    } catch (err) {
+        console.error('[auth] Update profile error:', err.message);
+        res.status(500).json({ error: 'Could not update profile: ' + err.message });
     }
 });
 
@@ -289,33 +680,23 @@ router.get('/profile/:userId', async (req, res) => {
             user = new User({
                 userId,
                 username: 'Learner',
+                nickname: 'learner',
                 currentLevel: 'A2',
                 streak: 1,
                 xp: 0,
                 avatar: '🇩🇪',
                 theme: 'dark-glass',
-                selectedModel: process.env.OLLAMA_MODEL || 'mistral-nemo:12b'
+                selectedModel: process.env.OLLAMA_MODEL || ''
             });
             await checkAndAwardAchievements(user);
             await user.save();
         }
 
+        const payload = formatUserPayload(user);
         res.json({
-            userId:            user.userId,
-            username:          user.username,
-            currentLevel:      user.currentLevel,
-            streak:            user.streak || 1,
-            xp:                user.xp || 0,
-            totalWordsLearned: user.totalWordsLearned || 0,
-            totalMessages:     user.totalMessages || 0,
-            essaysGraded:      user.essaysGraded || 0,
+            ...payload,
             averageEssayScore: user.averageEssayScore || 0,
             storiesRead:       user.storiesRead || 0,
-            avatar:            user.avatar || '🇩🇪',
-            dailyGoalMinutes:  user.dailyGoalMinutes || 15,
-            dailyGoalXp:       user.dailyGoalXp || 30,
-            selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || 'mistral-nemo:12b',
-            theme:             user.theme || 'dark-glass',
             ttsVoice:          user.ttsVoice || 'de-DE',
             ttsRate:           user.ttsRate || 0.95,
             progressByLevel:   user.progressByLevel || {
@@ -383,11 +764,12 @@ router.post('/reset-daily-modules', async (req, res) => {
 // POST /api/auth/settings/update — update user preferences
 router.post('/settings/update', async (req, res) => {
     try {
-        const { userId, username, avatar, currentLevel, dailyGoalMinutes, dailyGoalXp, selectedModel, theme, ttsVoice, ttsRate } = req.body;
+        const { userId, username, nickname, avatar, currentLevel, dailyGoalMinutes, dailyGoalXp, selectedModel, theme, ttsVoice, ttsRate } = req.body;
         if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
         const updateFields = {};
         if (username)          updateFields.username = username.trim();
+        if (nickname)          updateFields.nickname = nickname.trim().replace(/^@/, '');
         if (avatar)            updateFields.avatar = avatar;
         if (currentLevel)      updateFields.currentLevel = currentLevel;
         if (dailyGoalMinutes)  updateFields.dailyGoalMinutes = Number(dailyGoalMinutes);
@@ -405,11 +787,14 @@ router.post('/settings/update', async (req, res) => {
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 
+        const rawNick = user.nickname || user.username || 'Learner';
         res.json({
             success: true,
             user: {
                 userId:            user.userId,
                 username:          user.username,
+                nickname:          rawNick.startsWith('@') ? rawNick : `@${rawNick}`,
+                email:             user.email || '',
                 currentLevel:      user.currentLevel,
                 avatar:            user.avatar,
                 dailyGoalMinutes:  user.dailyGoalMinutes,
