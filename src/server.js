@@ -22,7 +22,7 @@ const __dirname  = dirname(__filename);
 const app       = express();
 const PORT      = process.env.PORT      || 5001;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tanim_german';
-const ACTIVE_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
+const ACTIVE_MODEL = process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
 
 const allowedOrigins = process.env.OLLAMA_ORIGINS || '*';
 app.use(cors({ origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',') }));

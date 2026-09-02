@@ -58,7 +58,7 @@ const dailyModuleStatusSchema = new mongoose.Schema({
 
 const userSchema = new mongoose.Schema({
     userId:       { type: String, required: true, unique: true, index: true },
-    username:     { type: String, required: true, trim: true },
+    username:     { type: String, default: 'Learner', trim: true },
     currentLevel: {
         type: String,
         enum: ['A1', 'A2', 'B1', 'B2', 'C1'],
@@ -78,7 +78,7 @@ const userSchema = new mongoose.Schema({
     // User Settings & Preferences
     dailyGoalMinutes:  { type: Number, default: 15 },
     dailyGoalXp:       { type: Number, default: 30 },
-    selectedModel:     { type: String, default: 'llama3.2:3b' },
+    selectedModel:     { type: String, default: 'mistral-nemo:12b' },
     theme:             { type: String, default: 'dark-glass' },
     ttsVoice:          { type: String, default: 'de-DE' },
     ttsRate:           { type: Number, default: 0.95 },

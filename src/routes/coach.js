@@ -4,7 +4,7 @@ import Vocabulary from '../models/Vocabulary.js';
 import { callOllama } from '../utils/ollama.js';
 
 const router = express.Router();
-const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
+const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
 
 // Curated default daily recommendations
 const FALLBACK_RECOMMENDATIONS = {
@@ -73,7 +73,7 @@ router.get('/recommendations', async (req, res) => {
 
         let user = await User.findOne({ userId });
         if (!user) {
-            user = await User.create({ userId, currentLevel: 'A2' });
+            user = await User.create({ userId, username: 'Learner', currentLevel: 'A2' });
         }
 
         const level = user.currentLevel || 'A2';

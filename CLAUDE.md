@@ -19,10 +19,14 @@ A local-first, premium, CEFR-aligned (A1-B2) German learning application featuri
 - `/src/routes/essay.js`            -> Advanced text evaluation, grading, and rubric analytics
 
 ## Critical Developer Commands
-- **Install Environment:** `npm install`
-- **Boot Local Stack:** `OLLAMA_ORIGINS="*" nodemon src/server.js`
+- **Automated 1-Step Setup:** `./setup.sh` (or `npm run setup`)
+- **System Doctor & Diagnostics:** `npm run doctor` (or `./setup.sh --doctor`)
+- **Boot Local Stack (Dev):** `npm run dev`
+- **Boot Local Stack (Prod):** `npm start`
+- **Docker Compose Stack:** `npm run docker:up` / `npm run docker:down`
 - **Verify Local Engine:** `curl http://localhost:11434/api/tags`
 - **Database Status Check:** `mongosh --eval "db.adminCommand('ping')"`
+- **Health Check:** `curl http://localhost:5001/api/health`
 
 ## Technology Constraints & Strict Conventions
 - **Module Format:** ES Modules strictly (`import/export`). No CommonJS `require()`.
@@ -35,7 +39,7 @@ A local-first, premium, CEFR-aligned (A1-B2) German learning application featuri
 ## Local Ollama Integration Protocol
 - **Endpoint Target:** Forward prompt strings to `http://localhost:11434/api/chat`.
 - **Streaming Toggle:** Maintain `"stream": false` parameter structures to simplify data state alignment during heavy multi-collection database queries.
-- **Model Standard:** Prioritize execution on `llama3.2` or `mistral` local binaries.
+- **Model Standard:** Standard model is `mistral-nemo:12b` local binary.
 
 ## Specialized Engine Feature Specifications
 

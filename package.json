@@ -6,7 +6,11 @@
   "main": "src/server.js",
   "scripts": {
     "start": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" node src/server.js",
-    "dev": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" nodemon src/server.js"
+    "dev": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" nodemon src/server.js",
+    "setup": "bash setup.sh",
+    "doctor": "node scripts/setup.js",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "cors": "^2.8.5",

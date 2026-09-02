@@ -6,7 +6,7 @@ import { checkAndAwardAchievements, getOrCreateDailyStatus } from './auth.js';
 import { callOllama } from '../utils/ollama.js';
 
 const router = express.Router();
-const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
+const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
 
 // ---- Leitner SRS math (per CLAUDE.md) ----
 // Wrong: srsStage=1, nextReview = +1 day

@@ -225,7 +225,7 @@ router.post('/login', async (req, res) => {
                 xp: 0,
                 dailyGoalMinutes: 15,
                 dailyGoalXp: 30,
-                selectedModel: process.env.OLLAMA_MODEL || 'llama3.2:3b',
+                selectedModel: process.env.OLLAMA_MODEL || 'mistral-nemo:12b',
                 theme: 'dark-glass',
                 studyHistory: [{ date: todayStr, xp: 0, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
                 progressByLevel: {
@@ -270,7 +270,7 @@ router.post('/login', async (req, res) => {
             theme:             user.theme || 'dark-glass',
             dailyGoalMinutes:  user.dailyGoalMinutes || 15,
             dailyGoalXp:       user.dailyGoalXp || 30,
-            selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || 'llama3.2:3b'
+            selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || 'mistral-nemo:12b'
         });
 
     } catch (err) {
@@ -294,7 +294,7 @@ router.get('/profile/:userId', async (req, res) => {
                 xp: 0,
                 avatar: '🇩🇪',
                 theme: 'dark-glass',
-                selectedModel: process.env.OLLAMA_MODEL || 'llama3.2:3b'
+                selectedModel: process.env.OLLAMA_MODEL || 'mistral-nemo:12b'
             });
             await checkAndAwardAchievements(user);
             await user.save();
@@ -314,7 +314,7 @@ router.get('/profile/:userId', async (req, res) => {
             avatar:            user.avatar || '🇩🇪',
             dailyGoalMinutes:  user.dailyGoalMinutes || 15,
             dailyGoalXp:       user.dailyGoalXp || 30,
-            selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || 'llama3.2:3b',
+            selectedModel:     user.selectedModel || process.env.OLLAMA_MODEL || 'mistral-nemo:12b',
             theme:             user.theme || 'dark-glass',
             ttsVoice:          user.ttsVoice || 'de-DE',
             ttsRate:           user.ttsRate || 0.95,

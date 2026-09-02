@@ -70,7 +70,7 @@ function updateNavState() {
     if (navXp) navXp.textContent = `${auth.xp || 0} XP`;
 
     const navModel = document.getElementById('navModelName');
-    if (navModel) navModel.textContent = auth.selectedModel || 'llama3.2:3b';
+    if (navModel) navModel.textContent = auth.selectedModel || 'mistral-nemo:12b';
 
     const coachTag = document.getElementById('coachLevelTag');
     if (coachTag) coachTag.textContent = currentLevel;
@@ -2374,7 +2374,7 @@ async function fetchInstalledModels() {
         const d = await r.json();
         const select = document.getElementById('settingsModelSelect');
         if (d.models && d.models.length && select) {
-            const activeModel = auth.selectedModel || d.currentDefault || 'llama3.2:3b';
+            const activeModel = auth.selectedModel || d.currentDefault || 'mistral-nemo:12b';
             select.innerHTML = d.models.map(m => `
                 <option value="${esc(m.name)}" ${m.name === activeModel ? 'selected' : ''}>
                     ${esc(m.name)} (${m.size || 'Local LLM'})

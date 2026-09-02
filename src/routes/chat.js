@@ -5,7 +5,7 @@ import { checkAndAwardAchievements, getOrCreateDailyStatus } from './auth.js';
 import { callOllama } from '../utils/ollama.js';
 
 const router = express.Router();
-const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
+const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
 
 // ---- System prompt builder ----
 function buildSystemPrompt(level) {

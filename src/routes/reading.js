@@ -4,7 +4,7 @@ import { checkAndAwardAchievements, getOrCreateDailyStatus } from './auth.js';
 import { callOllama } from '../utils/ollama.js';
 
 const router = express.Router();
-const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
+const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'mistral-nemo:12b';
 
 const LEVEL_INSTRUCTIONS = {
     A1: 'Use ONLY simple present tense. Max 80 words. Very simple subject + verb + object sentences. Topics: family, colors, food, greetings, daily routine. No complex grammar.',

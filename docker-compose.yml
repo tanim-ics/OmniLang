@@ -1,0 +1,41 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: omnilang-mongo
+    restart: unless-stopped
+    environment:
+      GLIBC_TUNABLES: "glibc.pthread.rseq=1"
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app:
+    container_name: omnilang-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: "5001"
+      MONGO_URI: "mongodb://mongo:27017/tanim_german"
+      OLLAMA_ENDPOINT: "http://host.docker.internal:11434/api/chat"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-mistral-nemo:12b}"
+      OLLAMA_ORIGINS: "*"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  mongo_data:
+    driver: local

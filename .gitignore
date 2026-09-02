@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+package-lock.json.bak
+
+# Local Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# Database & Runtime Data
+data/
+.omnilang/
+*.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary & Build Directories
+scratch/
+tmp/
+dist/
+coverage/
