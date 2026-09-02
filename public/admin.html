@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OmniLang — SaaS Administration Platform</title>
-    <meta name="description" content="OmniLang Enterprise SaaS Administration Portal — Manage users, platform metrics, and AI engine status.">
+    <meta name="description" content="OmniLang Enterprise SaaS Administration Portal — Manage users, platform metrics, passwords, and AI engine status.">
     <link rel="icon" type="image/png" href="assets/omnilang-icon.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,9 +13,9 @@
     <style>
         /* Admin specific layout styling */
         .admin-layout {
-            max-width: 1400px;
+            max-width: 1440px;
             margin: 0 auto;
-            padding: 1.5rem 2rem 4rem;
+            padding: 1.5rem 1.75rem 4rem;
         }
 
         .admin-header {
@@ -29,6 +29,8 @@
             margin-bottom: 2rem;
             backdrop-filter: blur(20px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .admin-brand-wrap {
@@ -61,7 +63,7 @@
         /* KPI Cards Grid */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 1.25rem;
             margin-bottom: 2rem;
         }
@@ -100,7 +102,7 @@
         }
 
         .kpi-title {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
             color: var(--text-secondary);
             text-transform: uppercase;
@@ -153,7 +155,7 @@
         .search-input-wrap {
             position: relative;
             flex: 1;
-            min-width: 260px;
+            min-width: 280px;
         }
 
         .search-input-wrap i {
@@ -205,38 +207,64 @@
             border-color: var(--primary);
         }
 
-        /* Users Table */
+        /* Responsive Table Container with Visible Scrollbar */
         .table-card {
             background: var(--surface-glass-card);
             border: 1px solid var(--border-glass);
             border-radius: var(--radius-xl);
-            overflow: hidden;
             box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Sleek custom horizontal scrollbar */
+        .table-responsive::-webkit-scrollbar {
+            height: 9px;
+        }
+        .table-responsive::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.35);
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, rgba(99,102,241,0.5), rgba(139,92,246,0.6));
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(90deg, rgba(99,102,241,0.8), rgba(139,92,246,0.9));
         }
 
         .users-table {
             width: 100%;
+            min-width: 1100px; /* Guarantees adequate breathing space for all columns */
             border-collapse: collapse;
             text-align: left;
             font-size: 0.875rem;
         }
 
         .users-table th {
-            padding: 1rem 1.25rem;
-            background: rgba(0,0,0,0.35);
+            padding: 1rem 1.1rem;
+            background: rgba(0,0,0,0.4);
             color: var(--text-secondary);
             font-weight: 700;
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             border-bottom: 1px solid var(--border-glass);
+            white-space: nowrap;
         }
 
         .users-table td {
-            padding: 1rem 1.25rem;
+            padding: 0.95rem 1.1rem;
             border-bottom: 1px solid var(--border-subtle);
             color: var(--text-main);
             vertical-align: middle;
+            white-space: nowrap;
         }
 
         .users-table tr:last-child td {
@@ -353,55 +381,94 @@
         .row-actions {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.45rem;
             justify-content: flex-end;
         }
 
-        .btn-action-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-glass);
-            background: rgba(255,255,255,0.04);
-            color: var(--text-secondary);
-            display: flex;
+        .btn-action-pill {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
+            gap: 0.35rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
+            border: 1px solid var(--border-glass);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
         }
 
-        .btn-action-icon:hover {
-            background: rgba(255,255,255,0.1);
-            color: var(--text-main);
+        .btn-action-pill:hover {
             transform: translateY(-1px);
         }
 
-        .btn-action-icon.delete:hover {
-            background: rgba(239,68,68,0.2);
-            border-color: rgba(239,68,68,0.5);
+        .btn-action-pill.delete {
+            background: rgba(239,68,68,0.15);
+            border-color: rgba(239,68,68,0.35);
             color: #f87171;
         }
-
-        .btn-action-icon.verify:hover {
-            background: rgba(16,185,129,0.2);
-            border-color: rgba(16,185,129,0.5);
-            color: #34d399;
+        .btn-action-pill.delete:hover {
+            background: rgba(239,68,68,0.3);
+            border-color: rgba(239,68,68,0.6);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(239,68,68,0.3);
         }
 
-        .btn-action-icon.role:hover {
-            background: rgba(139,92,246,0.2);
-            border-color: rgba(139,92,246,0.5);
+        .btn-action-pill.reset-pw {
+            background: rgba(245,158,11,0.15);
+            border-color: rgba(245,158,11,0.35);
+            color: #fbbf24;
+        }
+        .btn-action-pill.reset-pw:hover {
+            background: rgba(245,158,11,0.3);
+            border-color: rgba(245,158,11,0.6);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(245,158,11,0.25);
+        }
+
+        .btn-action-pill.verify {
+            background: rgba(16,185,129,0.15);
+            border-color: rgba(16,185,129,0.35);
+            color: #34d399;
+        }
+        .btn-action-pill.verify:hover {
+            background: rgba(16,185,129,0.3);
+            border-color: rgba(16,185,129,0.6);
+            color: #fff;
+        }
+
+        .btn-action-pill.role {
+            background: rgba(139,92,246,0.15);
+            border-color: rgba(139,92,246,0.35);
             color: #c084fc;
+        }
+        .btn-action-pill.role:hover {
+            background: rgba(139,92,246,0.3);
+            border-color: rgba(139,92,246,0.6);
+            color: #fff;
+        }
+
+        .protected-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.65rem;
+            border-radius: var(--radius-md);
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: rgba(245,158,11,0.12);
+            border: 1px solid rgba(245,158,11,0.3);
+            color: #fbbf24;
         }
 
         /* Modal Overlay */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -418,6 +485,30 @@
             padding: 2rem;
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
         }
+
+        /* Toast notifications */
+        .toast-notify {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.85rem 1.25rem;
+            border-radius: var(--radius-lg);
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #fff;
+            background: #1e293b;
+            border: 1px solid var(--border-glass-glow);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            gap: 0.6rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body style="background:var(--bg-gradient);min-height:100vh;color:var(--text-main);">
@@ -432,7 +523,7 @@
                 <span class="admin-badge-pill"><i class="fa-solid fa-shield-halved"></i> Enterprise Admin</span>
             </div>
 
-            <div style="display:flex;align-items:center;gap:1rem;">
+            <div style="display:flex;align-items:center;gap:0.85rem;flex-wrap:wrap;">
                 <!-- Current Model Chip -->
                 <div class="xp-chip" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.3);color:var(--accent-cyan);" id="headerModelChip" title="Active Model">
                     <i class="fa-solid fa-microchip"></i>
@@ -455,7 +546,7 @@
                 </div>
 
                 <!-- Sign Out -->
-                <button type="button" class="btn-action-icon" id="btnAdminLogout" title="Sign Out">
+                <button type="button" class="btn-action-pill" id="btnAdminLogout" title="Sign Out" style="padding:0.5rem 0.75rem;">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
@@ -555,29 +646,35 @@
             </div>
         </section>
 
-        <!-- Users Data Table -->
+        <!-- Users Data Table with Responsive Wrapper & Scrollbar -->
         <section class="table-card">
-            <table class="users-table">
-                <thead>
-                    <tr>
-                        <th>Learner Account</th>
-                        <th>Email &amp; Provider</th>
-                        <th>Role</th>
-                        <th>Level &amp; XP</th>
-                        <th>Status</th>
-                        <th>Assigned LLM</th>
-                        <th>Joined Date</th>
-                        <th style="text-align:right;">Admin Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersTableBody">
-                    <tr>
-                        <td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted);">
-                            <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:0.5rem;"></i> Loading user accounts…
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div style="padding:0.75rem 1.25rem;background:rgba(0,0,0,0.25);border-bottom:1px solid var(--border-glass);display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:var(--text-muted);">
+                <span><i class="fa-solid fa-table-list" style="margin-right:0.4rem;color:var(--accent-cyan);"></i> User Accounts Directory</span>
+                <span><i class="fa-solid fa-arrows-left-right" style="margin-right:0.3rem;"></i> Scroll horizontally if needed on smaller displays</span>
+            </div>
+            <div class="table-responsive">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:200px;">Learner Account</th>
+                            <th style="min-width:230px;">Email &amp; Provider</th>
+                            <th style="min-width:130px;">Role</th>
+                            <th style="min-width:120px;">Level &amp; XP</th>
+                            <th style="min-width:110px;">Status</th>
+                            <th style="min-width:140px;">Assigned LLM</th>
+                            <th style="min-width:110px;">Joined</th>
+                            <th style="min-width:220px;text-align:right;">Admin Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted);">
+                                <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:0.5rem;"></i> Loading user accounts…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
     </div>
 
@@ -598,6 +695,40 @@
                 <button type="button" class="btn-ghost" id="btnCancelDelete" style="padding:0.65rem 1.25rem;">Cancel</button>
                 <button type="button" class="btn-primary" id="btnConfirmDelete" style="background:#ef4444;border-color:#dc2626;padding:0.65rem 1.25rem;">
                     <i class="fa-solid fa-trash"></i> Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- MODAL: RESET PASSWORD (NEW FEATURE)                             -->
+    <!-- ================================================================ -->
+    <div class="modal-overlay" id="resetPwModal">
+        <div class="modal-card">
+            <div style="font-size:2.5rem;text-align:center;margin-bottom:0.75rem;">🔑</div>
+            <h3 style="font-size:1.25rem;font-weight:800;text-align:center;margin-bottom:0.5rem;">
+                Reset Password for <span id="resetPwTargetHandle" style="color:#fbbf24;">@user</span>
+            </h3>
+            <p style="font-size:0.85rem;color:var(--text-secondary);text-align:center;margin-bottom:1.25rem;">
+                Enter a new password for this user or generate a secure random one:
+            </p>
+
+            <div style="margin-bottom:1.25rem;">
+                <div class="password-input-wrap" style="position:relative;">
+                    <input type="text" id="adminNewPwInput" class="select-control-input" placeholder="Min 8 characters" style="padding-right:3rem;" autocomplete="off">
+                    <button type="button" class="btn-action-pill" id="btnGeneratePassword" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:0.3rem 0.55rem;font-size:0.75rem;" title="Generate Random Secure Password">
+                        🎲 Generate
+                    </button>
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem;">
+                    Must be at least 8 characters. The user can immediately sign in with this new password.
+                </div>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+                <button type="button" class="btn-ghost" id="btnCancelResetPw" style="padding:0.65rem 1.25rem;">Cancel</button>
+                <button type="button" class="btn-primary" id="btnConfirmResetPw" style="padding:0.65rem 1.25rem;">
+                    <i class="fa-solid fa-key"></i> Update Password
                 </button>
             </div>
         </div>
@@ -627,7 +758,7 @@
                     <input type="radio" name="roleRadio" value="admin">
                     <div>
                         <div style="font-weight:700;color:#c084fc;">Administrator</div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);">Can view user lists, stats, and force-verify</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Can view user directory, SaaS stats, and force-verify</div>
                     </div>
                 </label>
                 <label style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass);border-radius:var(--radius-md);cursor:pointer;">
@@ -647,6 +778,12 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div class="toast-notify" id="adminToast">
+        <i class="fa-solid fa-circle-check" style="color:#34d399;" id="toastIcon"></i>
+        <span id="toastMessage">Action successful</span>
+    </div>
+
     <!-- ================================================================ -->
     <!-- JAVASCRIPT: SAAS ADMIN LOGIC                                     -->
     <!-- ================================================================ -->
@@ -655,6 +792,7 @@
         let allUsers = [];
         let currentAdminUser = null;
         let deleteTarget = null;
+        let resetPwTarget = null;
         let roleTarget = null;
 
         const authStr = localStorage.getItem('tanim_auth');
@@ -663,6 +801,23 @@
         }
 
         const auth = JSON.parse(authStr || '{}');
+
+        // Show Toast Notification
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('adminToast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMessage');
+
+            msgEl.textContent = message;
+            icon.className = isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
+            icon.style.color = isError ? '#f87171' : '#34d399';
+            toast.style.borderColor = isError ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.5)';
+            toast.style.display = 'flex';
+
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3500);
+        }
 
         // Admin verification on boot
         async function checkAdminAuth() {
@@ -803,7 +958,7 @@
                                 <div class="user-info-text">
                                     <div class="user-handle-name">
                                         ${u.nickname}
-                                        ${isSuperAdmin ? '<i class="fa-solid fa-crown" style="color:#fbbf24;font-size:0.75rem;" title="Platform Owner"></i>' : ''}
+                                        ${isSuperAdmin ? '<i class="fa-solid fa-crown" style="color:#fbbf24;font-size:0.75rem;" title="Platform Super Admin"></i>' : ''}
                                     </div>
                                     <div class="user-id-sub">${u.userId}</div>
                                 </div>
@@ -827,25 +982,34 @@
                             <i class="fa-solid fa-microchip" style="font-size:0.7rem;"></i> ${u.selectedModel || '—'}
                         </td>
                         <td style="color:var(--text-muted);font-size:0.8rem;">${joinedDate}</td>
-                        <td>
+                        <td style="text-align:right;">
                             <div class="row-actions">
                                 ${!u.isVerified ? `
-                                    <button type="button" class="btn-action-icon verify" title="Force Verify Email" onclick="forceVerifyUser('${u.userId}', '${u.nickname}')">
-                                        <i class="fa-solid fa-check"></i>
+                                    <button type="button" class="btn-action-pill verify" title="Force Verify Email" onclick="forceVerifyUser('${u.userId}', '${u.nickname}')">
+                                        <i class="fa-solid fa-check"></i> Verify
                                     </button>
                                 ` : ''}
 
+                                <!-- Reset Password Button -->
+                                <button type="button" class="btn-action-pill reset-pw" title="Reset this user's password" onclick="openResetPwModal('${u.userId}', '${u.nickname}')">
+                                    <i class="fa-solid fa-key"></i> Reset PW
+                                </button>
+
+                                <!-- Role Button (Super Admin only) -->
                                 ${currentAdminUser?.role === 'superadmin' && !isSuperAdmin ? `
-                                    <button type="button" class="btn-action-icon role" title="Change Role" onclick="openRoleModal('${u.userId}', '${u.nickname}', '${u.role}')">
-                                        <i class="fa-solid fa-user-gear"></i>
+                                    <button type="button" class="btn-action-pill role" title="Change Role" onclick="openRoleModal('${u.userId}', '${u.nickname}', '${u.role}')">
+                                        <i class="fa-solid fa-user-gear"></i> Role
                                     </button>
                                 ` : ''}
 
+                                <!-- Delete Button -->
                                 ${!isSuperAdmin && !isCurrentAccount ? `
-                                    <button type="button" class="btn-action-icon delete" title="Delete User Permanently" onclick="openDeleteModal('${u.userId}', '${u.nickname}')">
-                                        <i class="fa-solid fa-trash"></i>
+                                    <button type="button" class="btn-action-pill delete" title="Permanently Delete User" onclick="openDeleteModal('${u.userId}', '${u.nickname}')">
+                                        <i class="fa-solid fa-trash"></i> Delete
                                     </button>
-                                ` : ''}
+                                ` : (isSuperAdmin ? `
+                                    <span class="protected-tag" title="Super Admin cannot be deleted"><i class="fa-solid fa-lock"></i> Protected</span>
+                                ` : '')}
                             </div>
                         </td>
                     </tr>
@@ -863,10 +1027,11 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
+                showToast(`Verified email for ${handle}!`);
                 await loadUsers();
                 await loadStats();
             } catch (err) {
-                alert('Verification failed: ' + err.message);
+                showToast('Verification failed: ' + err.message, true);
             }
         };
 
@@ -895,12 +1060,68 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
+                showToast(`User ${deleteTarget.handle} was deleted.`);
                 deleteModal.style.display = 'none';
                 deleteTarget = null;
                 await loadUsers();
                 await loadStats();
             } catch (err) {
-                alert('Delete failed: ' + err.message);
+                showToast('Delete failed: ' + err.message, true);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // Action: Reset Password Modal
+        const resetPwModal = document.getElementById('resetPwModal');
+        window.openResetPwModal = (userId, handle) => {
+            resetPwTarget = { userId, handle };
+            document.getElementById('resetPwTargetHandle').textContent = handle;
+            document.getElementById('adminNewPwInput').value = '';
+            resetPwModal.style.display = 'flex';
+        };
+
+        document.getElementById('btnCancelResetPw').addEventListener('click', () => {
+            resetPwModal.style.display = 'none';
+            resetPwTarget = null;
+        });
+
+        document.getElementById('btnGeneratePassword').addEventListener('click', () => {
+            const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+            let pass = 'OmniLang!';
+            for (let i = 0; i < 4; i++) {
+                pass += Math.floor(Math.random() * 10);
+            }
+            document.getElementById('adminNewPwInput').value = pass;
+        });
+
+        document.getElementById('btnConfirmResetPw').addEventListener('click', async () => {
+            if (!resetPwTarget) return;
+            const newPassword = document.getElementById('adminNewPwInput').value.trim();
+            if (!newPassword || newPassword.length < 8) {
+                return alert('Password must be at least 8 characters.');
+            }
+
+            const btn = document.getElementById('btnConfirmResetPw');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/admin/user/${resetPwTarget.userId}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': auth.userId
+                    },
+                    body: JSON.stringify({ newPassword })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                showToast(`Password successfully updated for ${resetPwTarget.handle}!`);
+                resetPwModal.style.display = 'none';
+                resetPwTarget = null;
+                await loadUsers();
+            } catch (err) {
+                showToast('Reset failed: ' + err.message, true);
             } finally {
                 btn.disabled = false;
             }
@@ -938,12 +1159,13 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
+                showToast(`Role updated for ${roleTarget.handle}!`);
                 roleModal.style.display = 'none';
                 roleTarget = null;
                 await loadUsers();
                 await loadStats();
             } catch (err) {
-                alert('Role update failed: ' + err.message);
+                showToast('Role update failed: ' + err.message, true);
             } finally {
                 btn.disabled = false;
             }

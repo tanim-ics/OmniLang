@@ -291,6 +291,46 @@ router.post('/user/:query/verify', async (req, res) => {
     }
 });
 
+// POST /api/admin/user/:query/reset-password — force-reset a user's password (by admin/superadmin)
+router.post('/user/:query/reset-password', async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
+        }
+
+        const q = req.params.query.trim();
+        const user = await User.findOne({
+            $or: [{ userId: q }, { email: q.toLowerCase() }, { nickname: q.replace(/^@/, '') }]
+        });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Non-superadmin cannot reset superadmin's password
+        const cleanNick = (user.nickname || '').toLowerCase().replace(/^@/, '');
+        if ((cleanNick === 'tanim' || user.role === 'superadmin') && req.adminCaller.role !== 'superadmin') {
+            return res.status(403).json({ error: 'Only a Super Admin can reset the Super Admin password.' });
+        }
+
+        const { scryptSync, randomBytes } = await import('crypto');
+        const salt = randomBytes(16).toString('hex');
+        const hash = scryptSync(newPassword, salt, 64).toString('hex');
+
+        user.passwordHash = hash;
+        user.passwordSalt = salt;
+        user.passwordResetCode = undefined;
+        user.passwordResetExpiry = undefined;
+        user.isVerified = true;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: `Password successfully updated for @${user.nickname || user.username}`
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST /api/admin/user/:query/grant-xp — grant XP to a user
 router.post('/user/:query/grant-xp', async (req, res) => {
     try {

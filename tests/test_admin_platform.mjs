@@ -132,6 +132,18 @@ async function runAdminPlatformTests() {
     });
     check('Force verify user succeeds (200)', verifyRes.status === 200);
 
+    // Admin reset password for test user
+    const adminResetRes = await fetch(`${BASE}/api/admin/user/${testUserId}/reset-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-User-Id': tanim.userId
+        },
+        body: JSON.stringify({ newPassword: 'AdminOverride@999' })
+    });
+    const adminResetData = await adminResetRes.json();
+    check('Admin password reset succeeds (200)', adminResetRes.status === 200 && adminResetData.success);
+
     // Delete test user
     const delRes = await fetch(`${BASE}/api/admin/user/${testUserId}`, {
         method: 'DELETE',
