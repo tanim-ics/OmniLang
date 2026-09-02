@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark-glass">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniLang — German Learning Command Center</title>
+    <link rel="icon" type="image/png" href="assets/omnilang-icon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dash-app">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="dash-navbar">
+        <div class="nav-left">
+            <a href="dashboard.html" class="app-brand" title="OmniLang Dashboard">
+                <img src="assets/omnilang-logo-dark.png" alt="OmniLang" class="brand-logo-img logo-dark-theme">
+                <img src="assets/omnilang-logo-light.png" alt="OmniLang" class="brand-logo-img logo-light-theme">
+            </a>
+            <div class="level-picker-dropdown-wrap">
+                <button class="badge-level badge-a2" id="navLevelBadge" style="cursor:pointer;border:1px solid rgba(255,255,255,0.15);" title="Click to Switch CEFR Level (A1 - C1)">
+                    <span id="navLevelText">A2 Elementary</span> <i class="fa-solid fa-chevron-down" style="font-size:0.6rem;margin-left:3px;"></i>
+                </button>
+                <div class="level-dropdown-menu" id="levelDropdownMenu">
+                    <div class="level-option-item" data-lvl="A1">🟢 <strong>A1</strong> Beginner</div>
+                    <div class="level-option-item active" data-lvl="A2">🟡 <strong>A2</strong> Elementary</div>
+                    <div class="level-option-item" data-lvl="B1">🔵 <strong>B1</strong> Intermediate</div>
+                    <div class="level-option-item" data-lvl="B2">🔴 <strong>B2</strong> Upper Intermediate</div>
+                    <div class="level-option-item" data-lvl="C1">🟣 <strong>C1</strong> Advanced Fluency</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="nav-center">
+            <button class="nav-tab-btn active" data-view="dashboard">
+                <i class="fa-solid fa-compass"></i> Modules
+            </button>
+            <button class="nav-tab-btn" data-view="coach">
+                <i class="fa-solid fa-robot"></i> AI Coach
+            </button>
+            <button class="nav-tab-btn" data-view="progress">
+                <i class="fa-solid fa-chart-line"></i> Analytics
+            </button>
+            <button class="nav-tab-btn" data-view="settings">
+                <i class="fa-solid fa-gear"></i> Settings
+            </button>
+        </nav>
+
+        <div class="nav-right">
+            <div class="streak-chip" title="Daily study streak">
+                <span class="flame-anim">🔥</span>
+                <span id="navStreakCount">1 Day</span>
+            </div>
+            <div class="xp-chip" title="Total XP earned">
+                <i class="fa-solid fa-bolt"></i>
+                <span id="navXpCount">0 XP</span>
+            </div>
+            <div class="xp-chip" id="navModelChip" style="cursor:pointer;background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.3);color:var(--accent-cyan);" title="Active Local Ollama Model — Click to switch">
+                <i class="fa-solid fa-microchip"></i>
+                <span id="navModelName">qwen3.5:9b</span>
+            </div>
+            <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <button class="settings-btn" id="settingsQuickBtn" title="User Settings">
+                <i class="fa-solid fa-sliders"></i>
+            </button>
+            <div class="user-profile-btn" id="navUserChip" title="View Profile">
+                <div class="user-avatar-small" id="navAvatar">🇩🇪</div>
+                <span class="user-name-small" id="navUsername">Learner</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="dash-content">
+
+        <!-- AI LEARNING COACH HERO BANNER -->
+        <section class="ai-coach-banner fade-in" id="coachHeroBanner">
+            <div class="coach-header">
+                <div class="coach-tag">
+                    <span class="coach-status-dot"></span>
+                    <span>Lukas AI Coach · Study Focus (<span id="coachLevelTag">A2</span>)</span>
+                </div>
+                <div class="coach-header-right">
+                    <div class="daily-time-sync-pill">
+                        <i class="fa-solid fa-clock" style="color:var(--accent-cyan);"></i>
+                        <span id="syncCurrentTime">--:--</span> &middot;
+                        <span id="syncResetCountdown" style="color:var(--accent-amber);">⏳ Resets in --h --m</span>
+                    </div>
+                    <button class="btn-ghost" id="refreshCoachBtn" title="Re-evaluate with Local AI">
+                        <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="coach-grid">
+                <div class="coach-left">
+                    <h2 id="coachFocusTitle">Loading your personalized daily focus...</h2>
+                    <p class="coach-reasoning" id="coachReasoning">
+                        Analyzing your recent quiz errors, spaced repetition cards, and CEFR milestones with your local LLM...
+                    </p>
+
+                    <div class="coach-missions" id="coachMissionsContainer">
+                        <!-- Populated dynamically by app.js -->
+                    </div>
+                </div>
+
+                <div class="coach-right">
+                    <div class="proverb-card">
+                        <span class="proverb-title"><i class="fa-solid fa-quote-left"></i> German Idiom of the Day</span>
+                        <div class="proverb-de" id="proverbDe">"Übung macht den Meister."</div>
+                        <div class="proverb-en" id="proverbEn">Practice makes perfect.</div>
+                    </div>
+                    <div class="coach-tip-box" id="coachTipBox">
+                        <i class="fa-solid fa-lightbulb" style="color:var(--accent-amber);margin-top:2px;"></i>
+                        <span id="coachTipText">Learn German nouns with their definite articles (der, die, das) from day one!</span>
+                    </div>
+                    <button class="btn-secondary" id="askCoachModalBtn" style="justify-content:center;margin-top:auto;">
+                        <i class="fa-solid fa-comments"></i> Ask Coach for Learning Advice
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- DAILY TIME-SYNCED PRACTICE SCHEDULE -->
+        <section class="daily-schedule-card fade-in" id="dailyScheduleSection">
+            <div class="daily-schedule-top">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div style="font-size:1.5rem;">📅</div>
+                    <div>
+                        <h4 style="font-size:1rem;font-weight:800;color:var(--text-main);margin-bottom:0.15rem;">
+                            Daily Practice Schedule · <span id="syncDateLabel" style="color:var(--primary);">Today</span>
+                        </h4>
+                        <span style="font-size:0.75rem;color:var(--text-muted);" id="dailyResetSubtext">
+                            Modules reset every midnight. Complete all 5 for +50 XP bonus!
+                        </span>
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.75rem;align-items:center;">
+                    <button class="btn-ghost" id="resetDailyPracticeBtn" style="font-size:0.75rem;padding:3px 10px;border-radius:var(--radius-full);background:rgba(255,255,255,0.06);" title="Reset today's completed practice status to due">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Due Status
+                    </button>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.875rem;font-weight:800;color:var(--text-main);" id="dailyCompletionStatus">
+                            0 / 5 Completed (0%)
+                        </div>
+                        <div style="width:140px;height:6px;background:var(--border-subtle);border-radius:var(--radius-full);overflow:hidden;margin-top:0.35rem;">
+                            <div id="dailyCompletionBar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="daily-chips-row" id="dailyModuleChipsRow">
+                <div class="daily-module-chip due" data-open="vocab" id="chipDueVocab">
+                    <i class="fa-solid fa-layer-group"></i> <span>Vocab SRS: Due</span>
+                </div>
+                <div class="daily-module-chip due" data-open="chat" id="chipDueChat">
+                    <i class="fa-solid fa-comments"></i> <span>AI Chat: Due</span>
+                </div>
+                <div class="daily-module-chip due" data-open="speaking" id="chipDueSpeaking">
+                    <i class="fa-solid fa-microphone-lines"></i> <span>Speaking: Due</span>
+                </div>
+                <div class="daily-module-chip due" data-open="writing" id="chipDueWriting">
+                    <i class="fa-solid fa-pen-nib"></i> <span>Essay: Due</span>
+                </div>
+                <div class="daily-module-chip due" data-open="reading" id="chipDueReading">
+                    <i class="fa-solid fa-book-open"></i> <span>Reading: Due</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6 INTERACTIVE LEARNING MODULES -->
+        <section class="modules-section">
+            <div class="modules-section-header">
+                <h3>Learning Modules</h3>
+                <span style="font-size:0.8125rem;color:var(--text-muted);font-weight:600;">CEFR Aligned · Local-First AI</span>
+            </div>
+
+            <div class="modules-grid" style="margin-top:1.25rem;">
+                <!-- 1. VOCABULARY SRS -->
+                <div class="module-widget glass-card fade-in" data-open="vocab">
+                    <div class="module-widget-top">
+                        <div class="module-widget-icon icon-vocab">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <span class="module-daily-badge badge-daily-due" id="cardDueBadgeVocab">
+                            <i class="fa-solid fa-fire"></i> Due Today
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="module-widget-title">Vocabulary SRS</h4>
+                        <p class="module-widget-desc">Spaced repetition memory deck with Leitner 5-box intervals and 3D flipcards.</p>
+                    </div>
+                    <div class="module-widget-footer">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;" id="vocabTotalCount">32 words</span>
+                        <div class="module-action-link">Start Review <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 2. AI CHAT -->
+                <div class="module-widget glass-card fade-in" data-open="chat">
+                    <div class="module-widget-top">
+                        <div class="module-widget-icon icon-chat">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <span class="module-daily-badge badge-daily-due" id="cardDueBadgeChat">
+                            <i class="fa-solid fa-fire"></i> Due Today
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="module-widget-title">AI Conversation Partner</h4>
+                        <p class="module-widget-desc">Real-time German conversation with Lukas. Adaptive CEFR level and live grammar corrections.</p>
+                    </div>
+                    <div class="module-widget-footer">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Text &amp; Voice TTS</span>
+                        <div class="module-action-link">Open Chat <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 3. SPEAKING IMMERSION -->
+                <div class="module-widget glass-card fade-in" data-open="speaking">
+                    <div class="module-widget-top">
+                        <div class="module-widget-icon icon-speaking">
+                            <i class="fa-solid fa-microphone-lines"></i>
+                        </div>
+                        <span class="module-daily-badge badge-daily-due" id="cardDueBadgeSpeaking">
+                            <i class="fa-solid fa-fire"></i> Due Today
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="module-widget-title">Speaking Mode</h4>
+                        <p class="module-widget-desc">Voice-first conversation. Speak into your microphone and hear immediate spoken German feedback.</p>
+                    </div>
+                    <div class="module-widget-footer">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Live STT Engine</span>
+                        <div class="module-action-link">Speak Now <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 4. WRITING & ESSAY -->
+                <div class="module-widget glass-card fade-in" data-open="writing">
+                    <div class="module-widget-top">
+                        <div class="module-widget-icon icon-writing">
+                            <i class="fa-solid fa-pen-nib"></i>
+                        </div>
+                        <span class="module-daily-badge badge-daily-due" id="cardDueBadgeWriting">
+                            <i class="fa-solid fa-fire"></i> Due Today
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="module-widget-title">Writing &amp; Essay Evaluator</h4>
+                        <p class="module-widget-desc">Submit essays or paragraphs for full CEFR grading, score out of 100, and vocabulary upgrades.</p>
+                    </div>
+                    <div class="module-widget-footer">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;" id="essayStatsWidget">0 essays graded</span>
+                        <div class="module-action-link">Grade Writing <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 5. GRADED READING -->
+                <div class="module-widget glass-card fade-in" data-open="reading">
+                    <div class="module-widget-top">
+                        <div class="module-widget-icon icon-reading">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <span class="module-daily-badge badge-daily-due" id="cardDueBadgeReading">
+                            <i class="fa-solid fa-fire"></i> Due Today
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="module-widget-title">Graded Reading Stories</h4>
+                        <p class="module-widget-desc">AI-generated German stories tailored to your level. Click any word to translate &amp; add to flashcards.</p>
+                    </div>
+                    <div class="module-widget-footer">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Interactive Reader</span>
+                        <div class="module-action-link">Read Stories <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 6. PROGRESS TRACKER -->
+                <div class="module-widget glass-card fade-in" data-open="progress">
+                    <div class="module-widget-top">
+                        <div class="module-widget-icon icon-progress">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <span class="badge-level badge-b1">Analytics &amp; Badges</span>
+                    </div>
+                    <div>
+                        <h4 class="module-widget-title">My Progress &amp; Trophies</h4>
+                        <p class="module-widget-desc">CEFR level mastery gauges, Leitner SRS 5-box distribution, study history charts, and unlocked badges.</p>
+                    </div>
+                    <div class="module-widget-footer">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;" id="trophiesUnlockedCount">0 badges</span>
+                        <div class="module-action-link">View Stats <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =========================================================
+         FULLSCREEN MODULE OVERLAY PANELS
+         ========================================================= -->
+
+    <!-- PANEL: VOCABULARY SRS -->
+    <!-- PANEL: VOCABULARY SRS & 15K BANK -->
+    <div class="module-overlay-panel" id="panel-vocab">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="panel-vocab">
+                    <i class="fa-solid fa-chevron-left"></i> Modules
+                </button>
+                <h3 class="panel-title">Vocabulary &amp; Word Bank</h3>
+                <span class="badge-level badge-b1" id="vocabLevelBadge" style="margin-left:0.5rem;">A2 Deck (20 Cards)</span>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <div style="display:flex;background:rgba(0,0,0,0.25);border:1px solid var(--border-glass);border-radius:var(--radius-full);padding:2px;">
+                    <button class="btn-filter btn-sm active" id="viewVocabPracticeBtn" style="border:none;border-radius:var(--radius-full);padding:3px 12px;font-size:0.75rem;">
+                        <i class="fa-solid fa-layer-group"></i> 20-Card Deck
+                    </button>
+                    <button class="btn-filter btn-sm" id="viewVocabBankBtn" style="border:none;border-radius:var(--radius-full);padding:3px 12px;font-size:0.75rem;">
+                        <i class="fa-solid fa-book-bookmark"></i> 15k Word Bank
+                    </button>
+                </div>
+                <input type="text" id="customVocabTopicInput" class="select-control-input" placeholder="Topic..." style="width:130px;padding:0.35rem 0.65rem;font-size:0.75rem;">
+                <button class="btn-primary" id="generateAiVocabBtn" style="padding:0.4rem 0.85rem;font-size:0.75rem;" title="Draw 20 Fresh CEFR Words">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> 20 AI Words
+                </button>
+                <button class="btn-ghost" id="vocabShuffleBtn" title="Shuffle Deck"><i class="fa-solid fa-shuffle"></i></button>
+            </div>
+        </header>
+
+        <div class="panel-content-scroll">
+            <!-- VIEW 1: 20-CARD FLASHCARD DRILL -->
+            <div class="vocab-deck-container" id="vocabPracticeStageView">
+                <!-- Drill Mode Switcher -->
+                <div class="vocab-mode-bar" style="display:flex;gap:0.5rem;margin-bottom:1.25rem;justify-content:center;flex-wrap:wrap;">
+                    <button class="btn-filter active" id="vocabModeDueBtn" data-mode="due">
+                        <i class="fa-solid fa-fire" style="color:var(--accent-amber);"></i> Due Today (<span id="modeDueCount">0</span>)
+                    </button>
+                    <button class="btn-filter" id="vocabModeMistakesBtn" data-mode="mistakes">
+                        <i class="fa-solid fa-rotate-left" style="color:var(--accent-rose);"></i> Mistaken Words (<span id="modeMistakesCount">0</span>)
+                    </button>
+                    <button class="btn-filter" id="vocabModeAllBtn" data-mode="all">
+                        <i class="fa-solid fa-book-open" style="color:var(--accent-cyan);"></i> All Words (Cram) (<span id="modeAllCount">0</span>)
+                    </button>
+                </div>
+
+                <div class="vocab-stats-strip">
+                    <div class="vstat-pill">
+                        <div class="vstat-num" id="srsStatDue">0</div>
+                        <div class="vstat-label">Cards in Deck</div>
+                    </div>
+                    <div class="vstat-pill">
+                        <div class="vstat-num" id="srsStatReviewed" style="color:var(--secondary);">0</div>
+                        <div class="vstat-label">Reviewed</div>
+                    </div>
+                    <div class="vstat-pill">
+                        <div class="vstat-num" id="srsStatLearned" style="color:var(--accent-emerald);">0</div>
+                        <div class="vstat-label">Learned</div>
+                    </div>
+                </div>
+
+                <div class="srs-progress-bar-wrap">
+                    <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);font-weight:600;">
+                        <span id="deckModeHeading">Session Progress</span>
+                        <span id="srsProgressLabel">0 / 0</span>
+                    </div>
+                    <div class="srs-progress-bar">
+                        <div class="srs-progress-fill" id="srsProgressFill" style="width:0%;"></div>
+                    </div>
+                </div>
+
+                <div id="vocabCardStage" style="width:100%;">
+                    <!-- Flashcard injected here -->
+                </div>
+
+                <!-- Learning Activity & Reaction History Log -->
+                <div class="vocab-history-card glass-card" style="margin-top:2.5rem;padding:1.25rem 1.5rem;width:100%;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem;">
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <i class="fa-solid fa-clipboard-check" style="color:var(--accent-cyan);font-size:1.1rem;"></i>
+                            <h4 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-main);">Vocabulary Activity &amp; Reaction Log</h4>
+                        </div>
+                        <div style="display:flex;gap:0.4rem;">
+                            <button class="btn-filter btn-sm active" id="vocabTabSessionBtn" style="padding:4px 10px;font-size:0.75rem;">
+                                This Session (<span id="sessionLogCount">0</span>)
+                            </button>
+                            <button class="btn-filter btn-sm" id="vocabTabBankBtn" style="padding:4px 10px;font-size:0.75rem;">
+                                Word Bank &amp; Mastery (<span id="bankTotalCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                    <div id="vocabLogContainer" style="max-height:300px;overflow-y:auto;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);padding:0.5rem;">
+                        <!-- Dynamic reaction items or bank table -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: 15,000-WORD VOCABULARY BANK EXPLORER -->
+            <div class="bank-explorer-container" id="vocabBankExplorerView" style="display:none;">
+                <div class="bank-search-bar">
+                    <div style="position:relative;flex:1;min-width:260px;">
+                        <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--text-muted);"></i>
+                        <input type="text" id="bankSearchInput" class="select-control-input" placeholder="Search 15,000 German words, articles, or English meanings..." style="padding-left:2.5rem;width:100%;">
+                    </div>
+                    <div class="bank-filters-row" style="flex:1;">
+                        <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+                            <button class="btn-filter btn-sm active bank-level-pill" data-lvl="all">All (15,000)</button>
+                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="A1">🟢 A1 (5,000)</button>
+                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="A2">🟡 A2 (5,000)</button>
+                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="B1">🔵 B1 (5,000)</button>
+                        </div>
+                        <select id="bankTopicFilter" class="select-control-input" style="padding:0.35rem 0.65rem;font-size:0.8125rem;max-width:140px;">
+                            <option value="All">All Topics</option>
+                            <option value="Food">Food &amp; Dining</option>
+                            <option value="Travel">Travel &amp; Cities</option>
+                            <option value="Work">Work &amp; Career</option>
+                            <option value="Home">Home &amp; Living</option>
+                            <option value="Family">Family &amp; Friends</option>
+                            <option value="Health">Health &amp; Medicine</option>
+                            <option value="Education">Education</option>
+                            <option value="Nature">Nature &amp; Weather</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Emotions">Emotions</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;color:var(--text-muted);padding:0 0.25rem;">
+                    <div>Found <span id="bankResultCount" style="font-weight:700;color:var(--accent-cyan);">15,000</span> entries</div>
+                    <div id="bankPageIndicator">Page 1 of 300</div>
+                </div>
+
+                <div class="bank-word-grid" id="bankWordGrid">
+                    <!-- Dynamic bank word cards injected here -->
+                </div>
+
+                <div class="bank-pagination-bar">
+                    <button class="btn-secondary" id="bankPrevPageBtn" disabled><i class="fa-solid fa-chevron-left"></i> Previous</button>
+                    <span id="bankPaginationLabel" style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);">Page 1</span>
+                    <button class="btn-secondary" id="bankNextPageBtn">Next <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL: AI CHAT -->
+    <div class="module-overlay-panel" id="panel-chat">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="panel-chat">
+                    <i class="fa-solid fa-chevron-left"></i> Modules
+                </button>
+                <button class="btn-ghost" id="chatSidebarToggleBtn" title="Toggle Chat History Sidebar" style="font-size:0.8125rem;padding:0.45rem 0.75rem;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> History
+                </button>
+                <h3 class="panel-title">AI Tutor Lukas (CEFR <span id="chatLevelIndicator">A2</span>)</h3>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                <button class="btn-secondary" id="endChatBtn" style="color:var(--accent-rose);border-color:rgba(239,68,68,0.3);font-size:0.8125rem;padding:0.45rem 0.85rem;" title="End and summarize this chat session">
+                    <i class="fa-solid fa-flag-checkered"></i> End Chat
+                </button>
+                <button class="btn-ghost" id="chatTtsToggleBtn" title="Toggle Audio Voice"><i class="fa-solid fa-volume-high"></i> Voice ON</button>
+                <button class="btn-ghost" id="chatClearBtn" title="Restart Conversation"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            </div>
+        </header>
+
+        <div class="panel-content-scroll" style="padding:1rem;">
+            <div class="chat-workspace-wrapper">
+                <!-- SIDEBAR: CHAT HISTORY -->
+                <aside class="chat-history-sidebar" id="chatHistorySidebar">
+                    <div class="chat-history-sidebar-top">
+                        <div class="chat-history-sidebar-title">
+                            <i class="fa-solid fa-comments" style="color:var(--primary);"></i>
+                            <span>Chat History</span>
+                        </div>
+                        <button class="btn-primary btn-sm" id="newChatSessionBtn" style="font-size:0.75rem;padding:5px 11px;border-radius:var(--radius-full);">
+                            <i class="fa-solid fa-plus"></i> New Chat
+                        </button>
+                    </div>
+                    <div class="chat-history-list" id="chatHistoryList">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </aside>
+
+                <!-- MAIN CHAT AREA -->
+                <main class="chat-main-container">
+                    <!-- Active Session Bar -->
+                    <div class="chat-session-active-bar" id="chatSessionActiveBar">
+                        <div style="display:flex;align-items:center;gap:0.6rem;min-width:0;">
+                            <span class="badge-mini badge-a2" id="activeChatSessionLevelBadge">A2</span>
+                            <span class="chat-active-title" id="activeChatSessionTitle">Unterhaltung mit Lukas</span>
+                            <span class="badge-mini" id="activeChatStatusBadge" style="background:rgba(16,185,129,0.15);color:#34d399;">Active</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;color:var(--text-muted);">
+                            <span id="activeChatMessageCount">0 messages</span>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div class="chat-messages-area" id="chatMessagesContainer">
+                        <!-- Messages injected here -->
+                    </div>
+
+                    <!-- Input Bar -->
+                    <div class="chat-bottom-input-bar" id="chatInputBar">
+                        <input type="text" class="chat-input-box" id="chatTextInput" placeholder="Antworte auf Deutsch hier… (e.g. Ich habe heute Deutsch gelernt)" autocomplete="off">
+                        <button class="voice-mic-button" id="chatMicBtn" title="Voice Input (Speech-to-Text)">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                        <button class="btn-primary" id="chatSendBtn" style="padding:0.75rem 1.25rem;">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+
+                    <!-- Chat Ended Banner -->
+                    <div class="chat-ended-banner" id="chatEndedBanner" style="display:none;">
+                        <div style="display:flex;align-items:center;gap:0.75rem;">
+                            <span style="font-size:1.5rem;">🏁</span>
+                            <div>
+                                <div style="font-weight:800;font-size:0.875rem;color:var(--text-main);">Gespräch abgeschlossen (Chat Ended)</div>
+                                <div style="font-size:0.78rem;color:var(--text-secondary);">Du hast dieses Gespräch beendet und 10 Bonus-XP gesammelt!</div>
+                            </div>
+                        </div>
+                        <button class="btn-primary btn-sm" id="startNewChatAfterEndBtn" style="padding:0.55rem 1.15rem;">
+                            <i class="fa-solid fa-plus"></i> Start New Chat
+                        </button>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL: SPEAKING MODE -->
+    <div class="module-overlay-panel" id="panel-speaking">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="panel-speaking">
+                    <i class="fa-solid fa-chevron-left"></i> Modules
+                </button>
+                <h3 class="panel-title">Voice Immersion Speaking</h3>
+                <span class="badge-level badge-a2" id="speakingLevelBadge" style="margin-left:0.5rem;">A2 Speaking</span>
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+                <button class="btn-secondary" id="nextSpeakingPromptBtn" style="font-size:0.75rem;padding:0.4rem 0.85rem;" title="Get another topic for your level">
+                    <i class="fa-solid fa-shuffle"></i> Next Topic
+                </button>
+            </div>
+        </header>
+
+        <div class="panel-content-scroll" style="justify-content:center;">
+            <div style="max-width:580px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.5rem;">
+                <div class="speaking-challenge-box" id="speakingChallengeCard">
+                    <span style="font-size:0.75rem;font-weight:700;color:var(--accent-cyan);text-transform:uppercase;letter-spacing:0.05em;" id="speakingChallengeTitle">German Speaking Challenge (A2)</span>
+                    <div style="font-size:1.15rem;font-weight:700;color:var(--text-main);line-height:1.5;" id="speakingPromptText">
+                        Was hast du am vergangenen Wochenende gemacht? Erzähle mir im Perfekt davon.
+                    </div>
+                    <button class="btn-ghost" id="playSpeakingPromptAudioBtn" style="font-size:0.8rem;padding:3px 10px;margin-top:0.25rem;">
+                        <i class="fa-solid fa-volume-high"></i> Listen to Prompt
+                    </button>
+                </div>
+
+                <div id="speakingTranscriptBox" style="min-height:45px;font-size:1.05rem;color:var(--accent-cyan);font-weight:600;padding:0.5rem 1rem;"></div>
+
+                <button class="big-mic-btn" id="bigSpeakingMicBtn" style="width:110px;height:110px;font-size:2.5rem;border-radius:50%;border:none;background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);color:#fff;cursor:pointer;box-shadow:var(--glow-shadow);transition:all 0.2s ease;">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+
+                <div class="speaking-response" id="speakingResponseBox" style="background:var(--surface-glass-card);border:1px solid var(--border-glass);border-radius:var(--radius-lg);padding:1.25rem;width:100%;font-size:1rem;line-height:1.6;color:var(--text-main);display:none;"></div>
+
+                <p style="font-size:0.8125rem;color:var(--text-muted);">Uses WebSpeech API &amp; Local Ollama AI feedback</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL: WRITING & ESSAY -->
+    <div class="module-overlay-panel" id="panel-writing">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="panel-writing">
+                    <i class="fa-solid fa-chevron-left"></i> Modules
+                </button>
+                <h3 class="panel-title">CEFR Essay Evaluator</h3>
+                <span class="badge-level badge-a2" id="essayLevelBadge" style="margin-left:0.5rem;">A2 Writing</span>
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+                <button class="btn-ghost" id="essayClearBtn"><i class="fa-solid fa-trash"></i> Clear</button>
+            </div>
+        </header>
+
+        <div class="panel-content-scroll">
+            <div class="essay-split-view">
+                <!-- Left Pane: Editor -->
+                <div class="essay-editor-pane">
+                    <div>
+                        <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Select Essay Level</label>
+                        <div style="display:flex;gap:0.5rem;margin-top:0.4rem;" id="essayLevelSelector">
+                            <button class="btn-ghost" data-level="A1">A1</button>
+                            <button class="btn-ghost active" data-level="A2" style="background:var(--primary-light);color:var(--primary);">A2</button>
+                            <button class="btn-ghost" data-level="B1">B1</button>
+                            <button class="btn-ghost" data-level="B2">B2</button>
+                            <button class="btn-ghost" data-level="C1">C1</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Essay Topic / Prompt (Optional)</label>
+                        <input type="text" class="select-control-input" id="essayPromptField" placeholder="e.g. Beschreibe dein Wochenende" style="margin-top:0.4rem;">
+                    </div>
+
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+                            <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Your German Text</label>
+                            <span id="essayWordCountBadge" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">0 words</span>
+                        </div>
+                        <textarea class="essay-textarea-input" id="essayTextInput" placeholder="Schreibe hier auf Deutsch…&#10;&#10;Zum Beispiel: Mein Wochenende war sehr schön. Ich bin mit meinen Freunden in den Park gegangen, weil das Wetter gut war."></textarea>
+                    </div>
+
+                    <button class="btn-primary" id="gradeEssaySubmitBtn" style="justify-content:center;">
+                        <i class="fa-solid fa-star"></i> Grade My Essay with AI
+                    </button>
+
+                    <div>
+                        <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Suggested Writing Prompts for <span id="essayPromptLevelTag">A2</span></label>
+                        <div id="essayPromptSuggestionsContainer" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;">
+                            <!-- Injected dynamically by active level -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Pane: Results -->
+                <div class="essay-results-pane" id="essayResultsPane">
+                    <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted);">
+                        <i class="fa-solid fa-file-signature" style="font-size:2.5rem;margin-bottom:1rem;color:var(--primary);"></i>
+                        <h4 style="font-size:1.1rem;color:var(--text-main);margin-bottom:0.4rem;">Ready for Assessment</h4>
+                        <p style="font-size:0.85rem;">Write your text on the left and click "Grade My Essay" for CEFR grading, score, error corrections, and vocabulary enhancements.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL: GRADED READING -->
+    <div class="module-overlay-panel" id="panel-reading">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="panel-reading">
+                    <i class="fa-solid fa-chevron-left"></i> Modules
+                </button>
+                <h3 class="panel-title">Graded Reading &amp; Word Mining</h3>
+                <span class="badge-level badge-a2" id="readingLevelBadge" style="margin-left:0.5rem;">A2 Reading</span>
+            </div>
+        </header>
+
+        <div class="panel-content-scroll">
+            <div class="reading-container">
+                <div class="glass-card" style="padding:1.25rem;display:flex;gap:0.75rem;flex-wrap:wrap;flex-direction:column;">
+                    <div style="display:flex;gap:0.75rem;width:100%;">
+                        <input type="text" class="select-control-input" id="readingTopicInput" placeholder="Topic (optional) — e.g. Ein Tag im Biergarten in München" style="flex:1;">
+                        <button class="btn-primary" id="generateStoryBtn">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Story
+                        </button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Suggested Topics:</span>
+                        <div id="readingTopicChipsContainer" style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                            <!-- Injected dynamically based on level -->
+                        </div>
+                    </div>
+                </div>
+
+                <div style="font-size:0.8125rem;color:var(--text-muted);display:flex;align-items:center;gap:0.4rem;">
+                    <i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i>
+                    <span>Click any German word in the story to translate it and instantly add it to your SRS vocabulary deck!</span>
+                </div>
+
+                <div class="story-card-body" id="storyContentBody">
+                    <p style="color:var(--text-muted);text-align:center;">Click "Generate Story" to create a fresh German story customized to your CEFR level.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Word Mining Floating Tooltip -->
+        <div class="floating-word-tooltip" id="wordMiningTooltip" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                    <h4 id="tooltipDeWord" style="font-size:1.35rem;font-weight:800;color:var(--text-main);">Wort</h4>
+                    <span id="tooltipWordType" style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">verb</span>
+                </div>
+                <button id="closeTooltipBtn" class="btn-ghost" style="padding:2px 6px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="tooltipEnTrans" style="font-size:1.05rem;font-weight:700;color:var(--accent-cyan);margin:0.5rem 0;">translation</div>
+            <div id="tooltipExample" style="font-size:0.8125rem;font-style:italic;color:var(--text-secondary);margin-bottom:0.75rem;"></div>
+            <button class="btn-primary" id="addWordToSrsBtn" style="width:100%;justify-content:center;font-size:0.8125rem;">
+                <i class="fa-solid fa-plus"></i> Add to Vocabulary Deck
+            </button>
+        </div>
+    </div>
+
+    <!-- PANEL: PROGRESS TRACKER & ANALYTICS -->
+    <div class="module-overlay-panel" id="panel-progress">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="panel-progress">
+                    <i class="fa-solid fa-chevron-left"></i> Modules
+                </button>
+                <h3 class="panel-title">My Learning Progress &amp; Achievements</h3>
+            </div>
+        </header>
+
+        <div class="panel-content-scroll">
+            <div class="progress-dashboard" id="progressDashboardContent">
+                <!-- Injected by app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL / PANEL: SETTINGS & PROFILE -->
+    <div class="module-overlay-panel" id="panel-settings">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="panel-settings">
+                    <i class="fa-solid fa-chevron-left"></i> Modules
+                </button>
+                <h3 class="panel-title">User Profile &amp; Settings</h3>
+            </div>
+            <button class="btn-primary" id="saveSettingsBtn"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+        </header>
+
+        <div class="panel-content-scroll">
+            <div class="settings-modal-wrap">
+                <!-- Avatar Customization -->
+                <div>
+                    <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.5rem;display:block;">Choose Your Avatar</label>
+                    <div class="avatar-picker-grid" id="avatarPickerGrid">
+                        <button class="avatar-option-btn selected" data-av="🇩🇪">🇩🇪</button>
+                        <button class="avatar-option-btn" data-av="🦅">🦅</button>
+                        <button class="avatar-option-btn" data-av="🥨">🥨</button>
+                        <button class="avatar-option-btn" data-av="🏰">🏰</button>
+                        <button class="avatar-option-btn" data-av="🚀">🚀</button>
+                        <button class="avatar-option-btn" data-av="🦉">🦉</button>
+                        <button class="avatar-option-btn" data-av="🦊">🦊</button>
+                        <button class="avatar-option-btn" data-av="⚡">⚡</button>
+                        <button class="avatar-option-btn" data-av="👑">👑</button>
+                        <button class="avatar-option-btn" data-av="🎯">🎯</button>
+                        <button class="avatar-option-btn" data-av="📚">📚</button>
+                        <button class="avatar-option-btn" data-av="💡">💡</button>
+                    </div>
+                </div>
+
+                <!-- Username & Level -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div>
+                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">Username</label>
+                        <input type="text" class="select-control-input" id="settingsUsernameField" placeholder="Username">
+                    </div>
+                    <div>
+                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">Current CEFR Level</label>
+                        <select class="select-control-input" id="settingsLevelSelect">
+                            <option value="A1">A1 — Absolute Beginner</option>
+                            <option value="A2">A2 — Elementary German</option>
+                            <option value="B1">B1 — Intermediate German</option>
+                            <option value="B2">B2 — Upper Intermediate</option>
+                            <option value="C1">C1 — Advanced Fluency &amp; Academic</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Daily Study Goal -->
+                <div>
+                    <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">Daily XP Goal: <span id="dailyGoalXpLabel" style="color:var(--primary);font-weight:800;">30 XP</span></label>
+                    <input type="range" id="dailyGoalXpSlider" min="10" max="150" step="5" value="30" style="width:100%;accent-color:var(--primary);">
+                </div>
+
+                <!-- Ollama Local Model Selector -->
+                <div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
+                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:0.4rem;">
+                            <i class="fa-solid fa-microchip" style="color:var(--accent-cyan);"></i> Local Ollama Model (Instant Switch)
+                        </label>
+                        <button class="btn-ghost" id="testModelBtn" style="font-size:0.75rem;padding:2px 6px;">
+                            <i class="fa-solid fa-vial"></i> Test Latency
+                        </button>
+                    </div>
+                    <select class="select-control-input" id="settingsModelSelect">
+                        <option value="llama3.2:3b">llama3.2:3b (3.2B parameters — Fast &amp; Light)</option>
+                        <option value="llama3.1:8b">llama3.1:8b (8.0B parameters — Balanced)</option>
+                        <option value="qwen3:14b">qwen3:14b (14.8B parameters — High Precision)</option>
+                    </select>
+                    <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:0.25rem;">
+                        Selecting any model immediately switches the active LLM engine across Chat, SRS, Graded Reading, and Essay Evaluation.
+                    </span>
+                    <div id="modelTestResult" style="font-size:0.75rem;margin-top:0.4rem;padding:0.4rem 0.6rem;border-radius:var(--radius-sm);display:none;"></div>
+                </div>
+
+                <!-- UI Theme Switcher -->
+                <div>
+                    <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.5rem;display:block;">UI Theme Style</label>
+                    <div class="theme-picker-grid" id="themePickerGrid">
+                        <div class="theme-select-card selected" data-thm="dark-glass">
+                            <span>✨ Dark Glass (OLED)</span>
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <div class="theme-select-card" data-thm="midnight-aurora">
+                            <span>🌌 Midnight Aurora</span>
+                        </div>
+                        <div class="theme-select-card" data-thm="indigo-glow">
+                            <span>🔮 Indigo Glow</span>
+                        </div>
+                        <div class="theme-select-card" data-thm="light-glass">
+                            <span>☀️ Clean Light Glass</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speech / TTS Settings -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div>
+                        <label style="font-size:0.8125rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;display:block;">German Voice Rate (<span id="ttsRateVal">0.95x</span>)</label>
+                        <input type="range" id="ttsRateSlider" min="0.6" max="1.3" step="0.05" value="0.95" style="width:100%;accent-color:var(--primary);">
+                    </div>
+                    <div style="display:flex;align-items:flex-end;">
+                        <button class="btn-secondary" id="testTtsVoiceBtn" style="width:100%;justify-content:center;">
+                            <i class="fa-solid fa-volume-high"></i> Preview Voice
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div style="border-top:1px solid var(--border-subtle);padding-top:1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;">
+                    <button class="btn-ghost" id="resetProgressBtn" style="color:var(--accent-rose);">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Reset Learning Progress
+                    </button>
+                    <button class="btn-ghost" id="logoutBtn" style="color:var(--text-muted);">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ASK AI COACH ADVICE -->
+    <div class="module-overlay-panel" id="modal-coach-ask">
+        <header class="panel-header">
+            <div class="panel-header-left">
+                <button class="panel-back-button" data-close="modal-coach-ask">
+                    <i class="fa-solid fa-xmark"></i> Close
+                </button>
+                <h3 class="panel-title">Ask Learning Coach Lukas</h3>
+            </div>
+        </header>
+
+        <div class="panel-content-scroll" style="justify-content:center;">
+            <div class="glass-card" style="max-width:600px;width:100%;padding:2rem;display:flex;flex-direction:column;gap:1.25rem;">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div class="brand-logo" style="width:44px;height:44px;font-size:1.4rem;">L</div>
+                    <div>
+                        <h4 style="font-size:1.1rem;color:var(--text-main);">Personal German Learning Advisor</h4>
+                        <p style="font-size:0.8125rem;color:var(--text-secondary);">Ask any question about grammar rules, study plans, or German exam prep.</p>
+                    </div>
+                </div>
+
+                <textarea class="essay-textarea-input" id="coachQuestionInput" rows="3" placeholder="e.g. How do I reliably know whether a noun is der, die, or das?"></textarea>
+
+                <button class="btn-primary" id="sendCoachQuestionBtn" style="justify-content:center;">
+                    <i class="fa-solid fa-paper-plane"></i> Ask Coach
+                </button>
+
+                <div id="coachAnswerResponse" style="background:rgba(255,255,255,0.04);border:1px solid var(--border-glass);border-radius:var(--radius-lg);padding:1.25rem;font-size:0.925rem;line-height:1.65;color:var(--text-main);display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING LEVEL TOAST NOTIFICATION -->
+    <div id="levelToast" class="level-toast" style="display:none;">
+        <i class="fa-solid fa-circle-check" style="color:#34d399;font-size:1.15rem;"></i>
+        <span id="levelToastText">Switched to Level B1 Intermediate — All 5 modules updated</span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

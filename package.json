@@ -1,0 +1,20 @@
+{
+  "name": "omnilang",
+  "version": "1.0.0",
+  "description": "Local-first CEFR-aligned German learning platform with AI speaking immersion",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" node src/server.js",
+    "dev": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" nodemon src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

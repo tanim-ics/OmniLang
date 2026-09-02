@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark-glass">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniLang — Master German with Local AI</title>
+    <link rel="icon" type="image/png" href="assets/omnilang-icon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="dash-navbar">
+        <div class="nav-left">
+            <a href="index.html" class="app-brand" title="OmniLang Home">
+                <img src="assets/omnilang-logo-dark.png" alt="OmniLang" class="brand-logo-img logo-dark-theme">
+                <img src="assets/omnilang-logo-light.png" alt="OmniLang" class="brand-logo-img logo-light-theme">
+            </a>
+            <span class="badge-level badge-a2">CEFR A1 &rarr; B2</span>
+        </div>
+        <div class="nav-right">
+            <a href="login.html" class="btn-primary" id="navCta">Start Learning <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </nav>
+
+    <main class="dash-content" style="max-width:1100px;padding-top:4rem;">
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:3rem;align-items:center;" class="fade-in">
+            <div>
+                <span class="badge-level badge-b1" style="margin-bottom:1rem;font-size:0.75rem;padding:0.3rem 0.8rem;">
+                    🚀 Powered by Local Ollama Models
+                </span>
+                <h1 style="font-size:clamp(2.5rem, 5vw, 4rem);font-weight:900;line-height:1.1;letter-spacing:-0.03em;margin-bottom:1.25rem;">
+                    Master German with Your Personal <span style="background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">AI Tutor</span>
+                </h1>
+                <p style="font-size:1.1rem;color:var(--text-secondary);line-height:1.7;margin-bottom:2rem;">
+                    Immersive AI speaking partner, Leitner 5-box vocabulary repetition, automated essay grading, graded reading with word mining, and personalized study recommendations—100% private on your machine.
+                </p>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                    <a href="login.html" class="btn-primary" id="heroCta" style="padding:0.85rem 1.75rem;font-size:1rem;">
+                        <i class="fa-solid fa-rocket"></i> Launch Command Center
+                    </a>
+                    <a href="#features" class="btn-secondary" style="padding:0.85rem 1.5rem;font-size:1rem;">
+                        Explore Features
+                    </a>
+                </div>
+            </div>
+
+            <div class="glass-card" style="padding:2rem;display:flex;flex-direction:column;gap:1rem;box-shadow:var(--glow-shadow);">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span class="badge-level badge-a2">Leitner SRS Deck</span>
+                    <span class="badge-level badge-b1">A2 · Verb</span>
+                </div>
+                <div style="font-size:2rem;font-weight:900;color:var(--text-main);">bekommen</div>
+                <div style="font-size:1.1rem;font-weight:700;color:var(--accent-cyan);">to receive / to get</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);font-style:italic;">"Ich habe ein tolles Geschenk bekommen."</div>
+                <div style="border-top:1px solid var(--border-subtle);padding-top:0.75rem;display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);">
+                    <span>Next review: in 3 days</span>
+                    <span style="color:var(--accent-emerald);font-weight:700;">+2 XP</span>
+                </div>
+            </div>
+        </div>
+
+        <section id="features" style="margin-top:5rem;">
+            <div style="text-align:center;margin-bottom:3rem;">
+                <h2 style="font-size:2rem;font-weight:900;letter-spacing:-0.02em;">Comprehensive German Learning Stack</h2>
+                <p style="color:var(--text-secondary);margin-top:0.5rem;">Everything you need to reach CEFR B2 fluency, hosted on Port 5001.</p>
+            </div>
+
+            <div class="modules-grid">
+                <div class="glass-card" style="padding:1.75rem;">
+                    <div class="module-widget-icon icon-vocab" style="margin-bottom:1rem;"><i class="fa-solid fa-layer-group"></i></div>
+                    <h3 style="font-size:1.15rem;margin-bottom:0.4rem;">Spaced Repetition System</h3>
+                    <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;">Leitner 5-box memory cards that schedule reviews just before you forget a word.</p>
+                </div>
+                <div class="glass-card" style="padding:1.75rem;">
+                    <div class="module-widget-icon icon-chat" style="margin-bottom:1rem;"><i class="fa-solid fa-comments"></i></div>
+                    <h3 style="font-size:1.15rem;margin-bottom:0.4rem;">AI Conversation Partner</h3>
+                    <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;">Chat with Lukas in German. Receives instant grammar error breakdowns in every response.</p>
+                </div>
+                <div class="glass-card" style="padding:1.75rem;">
+                    <div class="module-widget-icon icon-writing" style="margin-bottom:1rem;"><i class="fa-solid fa-pen-nib"></i></div>
+                    <h3 style="font-size:1.15rem;margin-bottom:0.4rem;">CEFR Essay Grader</h3>
+                    <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;">Submit German essays and get scored out of 100 with grammar corrections and vocabulary upgrades.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const auth = localStorage.getItem('tanim_auth');
+        if (auth) {
+            document.getElementById('navCta').textContent = 'Open Dashboard →';
+            document.getElementById('navCta').href = 'dashboard.html';
+            document.getElementById('heroCta').innerHTML = '<i class="fa-solid fa-arrow-right"></i> Continue Learning';
+            document.getElementById('heroCta').href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>
