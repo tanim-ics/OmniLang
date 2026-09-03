@@ -30,6 +30,8 @@ services:
       OLLAMA_ENDPOINT: "http://host.docker.internal:11434/api/chat"
       OLLAMA_MODEL: "${OLLAMA_MODEL:-mistral-nemo:12b}"
       OLLAMA_ORIGINS: "*"
+      IS_DOCKER: "true"
+      ADMIN_SECRET: "${ADMIN_SECRET:-ee4d29a9b8ecda78feba736c0b2e86ef1cbaebd0f31164be}"
     depends_on:
       mongo:
         condition: service_healthy
