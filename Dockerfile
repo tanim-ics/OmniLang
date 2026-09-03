@@ -20,6 +20,7 @@ EXPOSE 5001
 
 ENV PORT=5001
 ENV NODE_ENV=production
+ENV IS_DOCKER=true
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
   CMD curl -f http://localhost:5001/api/health || exit 1

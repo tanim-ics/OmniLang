@@ -1,10 +1,8 @@
 import express from 'express';
 import User from '../models/User.js';
-import { updateEnvModel, preloadModel, isOllamaReachable, ensureOllamaRunning } from '../utils/ollamaManager.js';
+import { updateEnvModel, preloadModel, isOllamaReachable, ensureOllamaRunning, getOllamaTagsEndpoint } from '../utils/ollamaManager.js';
 
 const router = express.Router();
-const OLLAMA_TAGS_ENDPOINT = 'http://localhost:11434/api/tags';
-const OLLAMA_CHAT_ENDPOINT = process.env.OLLAMA_ENDPOINT || 'http://localhost:11434/api/chat';
 
 // GET /api/settings/models — list all available models installed in local Ollama
 router.get('/models', async (_req, res) => {
@@ -14,7 +12,7 @@ router.get('/models', async (_req, res) => {
             await ensureOllamaRunning();
         }
 
-        const response = await fetch(OLLAMA_TAGS_ENDPOINT, { signal: AbortSignal.timeout(3000) });
+        const response = await fetch(getOllamaTagsEndpoint(), { signal: AbortSignal.timeout(3000) });
         if (!response.ok) {
             return res.json({
                 models: [],

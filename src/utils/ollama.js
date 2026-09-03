@@ -1,14 +1,11 @@
-import { ensureOllamaRunning, isOllamaReachable } from './ollamaManager.js';
-
-const OLLAMA_TAGS_ENDPOINT = 'http://localhost:11434/api/tags';
-const OLLAMA_CHAT_ENDPOINT = process.env.OLLAMA_ENDPOINT || 'http://localhost:11434/api/chat';
+import { ensureOllamaRunning, isOllamaReachable, getOllamaTagsEndpoint, getOllamaChatEndpoint } from './ollamaManager.js';
 
 /**
  * Fetch all model names currently installed in Ollama.
  */
 export async function getInstalledModels() {
     try {
-        const res = await fetch(OLLAMA_TAGS_ENDPOINT, { signal: AbortSignal.timeout(3000) });
+        const res = await fetch(getOllamaTagsEndpoint(), { signal: AbortSignal.timeout(3000) });
         if (res.ok) {
             const data = await res.json();
             return (data.models || []).map(m => m.name);
@@ -64,7 +61,7 @@ export async function callOllama(preferredModel, messages, options = {}) {
             };
             delete body.options?.options;
 
-            const response = await fetch(OLLAMA_CHAT_ENDPOINT, {
+            const response = await fetch(getOllamaChatEndpoint(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),

@@ -7,8 +7,34 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ENV_PATH = join(__dirname, '../../.env');
 
-const OLLAMA_TAGS_ENDPOINT = 'http://localhost:11434/api/tags';
-const OLLAMA_GENERATE_ENDPOINT = 'http://localhost:11434/api/generate';
+/**
+ * Resolve the base URL of the configured Ollama instance.
+ * Supports:
+ * - Localhost: http://localhost:11434
+ * - Docker: http://host.docker.internal:11434
+ * - Remote host/IP: http://192.168.1.50:11434
+ */
+export function getOllamaBaseUrl() {
+    const ep = process.env.OLLAMA_ENDPOINT || 'http://localhost:11434/api/chat';
+    try {
+        const url = new URL(ep);
+        return `${url.protocol}//${url.host}`;
+    } catch {
+        return 'http://localhost:11434';
+    }
+}
+
+export function getOllamaTagsEndpoint() {
+    return `${getOllamaBaseUrl()}/api/tags`;
+}
+
+export function getOllamaGenerateEndpoint() {
+    return `${getOllamaBaseUrl()}/api/generate`;
+}
+
+export function getOllamaChatEndpoint() {
+    return process.env.OLLAMA_ENDPOINT || `${getOllamaBaseUrl()}/api/chat`;
+}
 
 /**
  * Locate the ollama executable across standard and local system paths.
@@ -36,7 +62,7 @@ function findOllamaBinary() {
  */
 export async function isOllamaReachable() {
     try {
-        const res = await fetch(OLLAMA_TAGS_ENDPOINT, { signal: AbortSignal.timeout(2000) });
+        const res = await fetch(getOllamaTagsEndpoint(), { signal: AbortSignal.timeout(2500) });
         return res.ok;
     } catch {
         return false;
@@ -44,13 +70,33 @@ export async function isOllamaReachable() {
 }
 
 /**
- * Ensure Ollama server daemon is running. If not, spawn it in background safely.
+ * Ensure Ollama server daemon is running.
+ * - When running in Docker or with a remote host: checks connectivity without attempting local spawn.
+ * - When running natively on the host: safely spawns `ollama serve` if not yet running.
  */
 export async function ensureOllamaRunning() {
+    const baseUrl = getOllamaBaseUrl();
     const reachable = await isOllamaReachable();
     if (reachable) {
-        console.log('✓ Ollama service is already running on http://localhost:11434');
+        console.log(`✓ Ollama service is reachable on ${baseUrl}`);
         return true;
+    }
+
+    // Determine if running inside a Docker container or using a remote/virtual host
+    let isLocalhost = true;
+    try {
+        const hostname = new URL(baseUrl).hostname;
+        isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    } catch {
+        isLocalhost = false;
+    }
+
+    const isContainer = process.env.IS_DOCKER === 'true' || existsSync('/.dockerenv') || !isLocalhost;
+
+    if (isContainer) {
+        console.warn(`ℹ️  Running in container/remote mode. Ollama host is "${baseUrl}".`);
+        console.warn('   Ensure Ollama is active on your host machine (http://localhost:11434).');
+        return false;
     }
 
     console.log('⚡ Starting Ollama GPU server in background...');
@@ -85,7 +131,7 @@ export async function ensureOllamaRunning() {
             env: gpuEnv
         });
 
-        // CRITICAL: Attach error event listener to prevent uncaughtException (spawn ENOENT)
+        // CRITICAL: Catch error event on ChildProcess to prevent uncaughtException (spawn ENOENT)
         proc.on('error', (err) => {
             spawnError = err;
             console.warn(`⚠️ Could not auto-start Ollama daemon (${err.code || err.message}).`);
@@ -99,7 +145,7 @@ export async function ensureOllamaRunning() {
             if (spawnError) break;
             await new Promise(r => setTimeout(r, 1000));
             if (await isOllamaReachable()) {
-                console.log('✓ Ollama GPU service successfully started');
+                console.log(`✓ Ollama GPU service successfully started on ${baseUrl}`);
                 return true;
             }
         }
@@ -116,7 +162,7 @@ export async function preloadModel(modelName) {
     if (!modelName) return;
     try {
         console.log(`⏳ Pre-warming model "${modelName}" into GPU VRAM...`);
-        const res = await fetch(OLLAMA_GENERATE_ENDPOINT, {
+        const res = await fetch(getOllamaGenerateEndpoint(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
