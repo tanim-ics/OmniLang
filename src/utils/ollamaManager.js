@@ -11,6 +11,27 @@ const OLLAMA_TAGS_ENDPOINT = 'http://localhost:11434/api/tags';
 const OLLAMA_GENERATE_ENDPOINT = 'http://localhost:11434/api/generate';
 
 /**
+ * Locate the ollama executable across standard and local system paths.
+ */
+function findOllamaBinary() {
+    if (process.env.OLLAMA_BIN && existsSync(process.env.OLLAMA_BIN)) {
+        return process.env.OLLAMA_BIN;
+    }
+    const candidates = [
+        '/usr/local/bin/ollama',
+        '/usr/bin/ollama',
+        '/bin/ollama',
+        '/snap/bin/ollama',
+        join(process.env.HOME || '', 'bin/ollama'),
+        join(process.env.HOME || '', '.local/bin/ollama')
+    ];
+    for (const c of candidates) {
+        if (existsSync(c)) return c;
+    }
+    return 'ollama';
+}
+
+/**
  * Check if Ollama daemon is reachable.
  */
 export async function isOllamaReachable() {
@@ -23,7 +44,7 @@ export async function isOllamaReachable() {
 }
 
 /**
- * Ensure Ollama server daemon is running. If not, spawn it in background.
+ * Ensure Ollama server daemon is running. If not, spawn it in background safely.
  */
 export async function ensureOllamaRunning() {
     const reachable = await isOllamaReachable();
@@ -34,8 +55,22 @@ export async function ensureOllamaRunning() {
 
     console.log('⚡ Starting Ollama GPU server in background...');
     try {
+        const ollamaBin = findOllamaBinary();
+
+        const systemPath = [
+            '/usr/local/bin',
+            '/usr/bin',
+            '/bin',
+            '/usr/local/sbin',
+            '/usr/sbin',
+            '/sbin',
+            '/snap/bin',
+            process.env.PATH || ''
+        ].filter(Boolean).join(':');
+
         const gpuEnv = {
             ...process.env,
+            PATH: systemPath,
             CUDA_VISIBLE_DEVICES: '0',
             OLLAMA_FLASH_ATTENTION: '1',
             OLLAMA_NUM_PARALLEL: '1',
@@ -43,15 +78,25 @@ export async function ensureOllamaRunning() {
             OLLAMA_KEEP_ALIVE: '24h'
         };
 
-        const proc = spawn('ollama', ['serve'], {
+        let spawnError = null;
+        const proc = spawn(ollamaBin, ['serve'], {
             detached: true,
             stdio: 'ignore',
             env: gpuEnv
         });
+
+        // CRITICAL: Attach error event listener to prevent uncaughtException (spawn ENOENT)
+        proc.on('error', (err) => {
+            spawnError = err;
+            console.warn(`⚠️ Could not auto-start Ollama daemon (${err.code || err.message}).`);
+            console.warn('  OmniLang web server will run, but Ollama features require Ollama to be started manually (`ollama serve`).');
+        });
+
         proc.unref();
 
-        // Wait up to 10 seconds for Ollama to boot
-        for (let i = 0; i < 10; i++) {
+        // Wait up to 6 seconds for Ollama to boot
+        for (let i = 0; i < 6; i++) {
+            if (spawnError) break;
             await new Promise(r => setTimeout(r, 1000));
             if (await isOllamaReachable()) {
                 console.log('✓ Ollama GPU service successfully started');

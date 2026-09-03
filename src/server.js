@@ -89,8 +89,8 @@ mongoose
             console.error('Warning: VocabBank seeding notice:', err.message);
         }
 
-        // 1. Ensure Ollama server daemon is running
-        await ensureOllamaRunning();
+        // 1. Ensure Ollama server daemon is running (graceful fallback if not installed)
+        await ensureOllamaRunning().catch(err => console.warn('⚠️ Ollama check notice:', err.message));
 
         // 2. Pre-warm the configured active model into memory (only if a model is set)
         if (ACTIVE_MODEL) {
