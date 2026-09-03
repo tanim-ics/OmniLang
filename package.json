@@ -11,7 +11,8 @@
     "doctor": "node scripts/setup.js",
     "admin": "node scripts/admin.mjs",
     "test": "node tests/test_forgot_admin.mjs && node tests/test_admin_platform.mjs",
-    "docker:up": "docker compose up -d",
+    "docker:check": "node scripts/docker-preflight.js",
+    "docker:up": "node scripts/docker-preflight.js && docker compose up -d",
     "docker:down": "docker compose down"
   },
   "dependencies": {

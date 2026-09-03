@@ -99,7 +99,8 @@ If you prefer manual control:
 | `npm run admin -- list` | Lists all user accounts with status, XP, level, model |
 | `npm run admin -- delete <user>` | Permanently deletes a user and cascades vocab & chat history |
 | `npm test` | Runs the automated auth, reset password & admin test suite |
-| `npm run docker:up` | Starts MongoDB and OmniLang in Docker background containers |
+| `npm run docker:check` | Validates host Ollama installation & confirms at least one model is pulled |
+| `npm run docker:up` | Runs pre-flight validation, then boots MongoDB and OmniLang in Docker |
 | `npm run docker:down` | Stops all Docker containers |
 
 ---
