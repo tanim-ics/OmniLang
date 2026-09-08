@@ -1,0 +1,54 @@
+# Soup fine-tuning config for the German learning app
+# Model: Mistral-Nemo 12B (mistralai/Mistral-Nemo-Instruct-2407)
+# Task:  SFT — teach the model all 7 app behaviours (chat, reading, translation,
+#        essay grading, vocabulary generation, coach recommendations, coach Q&A)
+#
+# VRAM guide:
+#   quantization: 4bit  →  ~7 GB  (recommended: most modern GPUs)
+#   quantization: 4bit + stream_layers: true  →  ~4 GB  (low-VRAM mode)
+#   quantization: 8bit  →  ~13 GB
+#   quantization: none  →  ~26 GB  (full precision, A100-class only)
+
+base: mistralai/Mistral-Nemo-Instruct-2407
+task: sft
+output: ./output
+
+data:
+  train: ./data/train.jsonl
+  format: chatml          # matches the {messages: [...]} structure we generated
+  val_split: 0.1          # 10 % held out for validation loss tracking
+  max_length: 2048        # covers the longest coach recommendation + essay grading outputs
+
+training:
+  epochs: 4               # 4 passes — dataset is ~224 examples; more epochs needed
+  lr: 2e-5
+  batch_size: auto        # Soup picks the largest batch that fits in VRAM
+  gradient_accumulation_steps: 8
+  quantization: 4bit      # change to 8bit or none if you have ≥ 13 GB / ≥ 26 GB VRAM
+  optimizer: adamw_torch
+  scheduler: cosine
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  logging_steps: 10
+  save_steps: 50
+  save_strategy: steps
+  save_total_limit: 3
+  seed: 42
+
+  # LoRA adapter — efficient fine-tuning without full-weight updates
+  lora:
+    r: 32                 # rank 32 is a good balance for a 12 B model on task-specific SFT
+    alpha: 64             # alpha = 2 × r is the standard starting point
+    dropout: 0.05
+    target_modules:       # all attention projections + MLP gates for best coverage
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+      - gate_proj
+      - up_proj
+      - down_proj
+
+  # Uncomment the line below if your GPU has < 8 GB VRAM
+  # stream_layers: true
