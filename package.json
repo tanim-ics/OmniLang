@@ -17,7 +17,8 @@
     "docker:down": "docker compose down",
     "reseed-bank": "node scripts/reseed-bank.mjs",
     "audit-bank": "python3 scripts/audit_vocab_bank.py",
-    "stop": "bash start.sh --stop"
+    "stop": "bash start.sh --stop",
+    "build:binary": "node scripts/build-binary.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -26,6 +27,8 @@
     "mongoose": "^8.4.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "esbuild": "^0.25.10",
+    "nodemon": "^3.1.4",
+    "postject": "^1.0.0-alpha.6"
   }
 }

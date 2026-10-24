@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: API tests (MongoDB, no Ollama)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PORT: 5001
+      MONGO_URI: mongodb://127.0.0.1:27017/omnilang_ci
+      ADMIN_SECRET: ci-admin-secret
+      TZ: Europe/Vienna
+      # Nothing listens here: the tests cover auth/admin only, and the server
+      # just logs that Ollama is unreachable.
+      OLLAMA_ENDPOINT: http://127.0.0.1:11434/api/chat
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Start server
+        run: |
+          nohup node src/server.js > server.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf localhost:5001/api/health && exit 0
+            sleep 1
+          done
+          cat server.log; exit 1
+
+      # tests/test_admin_platform.mjs expects the primary super admin @tanim to exist.
+      # Registering the nickname "tanim" makes that account superadmin + verified.
+      - name: Create super admin @tanim
+        run: |
+          curl -sf -X POST localhost:5001/api/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"tanim-ci@example.com","password":"CiAdmin@1234","nickname":"tanim"}'
+
+      - run: npm test
+
+      - name: Server log
+        if: always()
+        run: cat server.log
+
+  build:
+    name: Binary bundles and starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:binary
+      - name: Smoke test (no MongoDB → must load every module, then exit on the DB error)
+        run: |
+          set +e
+          MONGO_URI='mongodb://127.0.0.1:1/x?serverSelectionTimeoutMS=2000' \
+            timeout 30 dist/omnilang-linux-x64/omnilang > smoke.log 2>&1
+          cat smoke.log
+          grep -q 'MongoDB connection failed' smoke.log

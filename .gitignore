@@ -33,6 +33,7 @@ Thumbs.db
 scratch/
 tmp/
 dist/
+build/
 coverage/
 
 # Downloaded sources & LLM cache for vocab bank scripts
