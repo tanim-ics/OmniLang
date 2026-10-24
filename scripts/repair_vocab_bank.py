@@ -107,6 +107,10 @@ def load_curated(path=CURATED_PATH):
                 removals.append(line[2:].strip())
                 continue
             cols = [c.strip() for c in line.split(' | ')]
+            if len(cols) == 3:  # gloss-only correction: word | type | translation
+                cols += ['', '']
+            elif len(cols) == 4 and cols[3] in ('A1', 'A2', 'B1', 'B2'):  # ... | level
+                cols = cols[:3] + ['', '', cols[3]]
             word, wtype, translation, example, example_en = cols[:5]
             entries[word] = {'type': wtype, 'translation': translation, 'example': example,
                              'exampleEn': example_en, 'level': cols[5] if len(cols) > 5 else None}

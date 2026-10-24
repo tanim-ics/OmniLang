@@ -8,6 +8,7 @@ import Vocabulary from '../models/Vocabulary.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const BANK_DATA_PATH = join(__dirname, '../data/vocabBank15k.json');
+const LEGACY_GLOSSES_PATH = join(__dirname, '../data/vocabBankLegacyGlosses.json');
 
 const META_COLLECTION = 'appmeta';
 const META_ID = 'vocabBank';
@@ -20,24 +21,46 @@ const TEMPLATE_EXAMPLE = new RegExp('^(Hier ist (der|die|das) |Ich habe (der|die
     + '|Unter diesen Umständen scheint die Entscheidung |Sie spricht \\S+ mit ihren Kollegen\\.|Bitte verwende das Wort )');
 
 /**
- * Refreshes deck cards that were copied from an older bank version: cards whose
- * example is a template sentence get the current bank translation and example
- * (or an empty example when the word was removed). SRS progress is untouched.
+ * Refreshes deck cards that were copied from an older bank version (SRS progress is untouched):
+ *  - cards whose example is a template sentence ("Hier ist das Ich.") or a sentence an earlier
+ *    bank shipped and has since replaced, and
+ *  - cards whose translation is one an earlier bank shipped and has since corrected
+ *    (src/data/vocabBankLegacyGlosses.json, e.g. "die Sängerin = songstress").
+ * Stale fields get the current bank value; sentences the user collected themselves are kept.
+ * When the word has left the bank, only a template example is cleared.
  */
 export async function refreshDeckCardsFromBank({ log = console.log } = {}) {
-    const stale = await Vocabulary.find({ example: TEMPLATE_EXAMPLE }).select('word').lean();
+    const legacy = existsSync(LEGACY_GLOSSES_PATH) ? JSON.parse(readFileSync(LEGACY_GLOSSES_PATH, 'utf-8')) : {};
+    const oldTranslations = legacy.translations || {};
+    const oldExamples = legacy.examples || {};
+    const legacyWords = [...new Set([...Object.keys(oldTranslations), ...Object.keys(oldExamples)])];
+    const candidates = await Vocabulary.find({
+        $or: [{ example: TEMPLATE_EXAMPLE }, { word: { $in: legacyWords } }]
+    }).select('word translation example').lean();
+    const staleExample = c => TEMPLATE_EXAMPLE.test(c.example || '') || (oldExamples[c.word] || []).includes(c.example);
+    const staleTranslation = c => (oldTranslations[c.word] || []).includes(c.translation);
+    const stale = candidates.filter(c => staleExample(c) || staleTranslation(c));
     if (!stale.length) return 0;
+
     const words = [...new Set(stale.map(c => c.word))];
     const bank = new Map((await VocabBank.find({ word: { $in: words } }).lean()).map(b => [b.word, b]));
     const ops = stale.map(card => {
         const b = bank.get(card.word);
-        const $set = b
-            ? { translation: b.translation, example: b.example || '', sourceText: b.exampleEn || b.topic || '15k Vocab Bank' }
-            : { example: '', sourceText: '' };
+        const templated = TEMPLATE_EXAMPLE.test(card.example || '');
+        let $set = {};
+        if (b) {
+            if (staleTranslation(card)) $set.translation = b.translation;
+            if (staleExample(card) || !card.example) {
+                Object.assign($set, { example: b.example || '', sourceText: b.exampleEn || b.topic || 'Vocab Bank' });
+            }
+        } else if (templated) {
+            $set = { example: '', sourceText: '' };
+        }
         return { updateOne: { filter: { _id: card._id }, update: { $set } } };
-    });
+    }).filter(op => Object.keys(op.updateOne.update.$set).length);
+    if (!ops.length) return 0;
     await Vocabulary.bulkWrite(ops, { ordered: false });
-    log(`✓ Refreshed ${ops.length} deck cards that still had template example sentences`);
+    log(`✓ Refreshed ${ops.length} deck cards that still had outdated translations or template sentences`);
     return ops.length;
 }
 

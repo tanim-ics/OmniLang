@@ -284,12 +284,13 @@ async function applyGlobalLevelChange(newLevel, notifyUser = true) {
     vocabLoaded = false;
     // Always reload the 20-card deck with the newly selected CEFR level
     loadVocabDeck(currentVocabMode || 'due');
-    // Update bank explorer level pill if A1/A2/B1
-    if (['A1', 'A2', 'B1'].includes(newLevel)) {
+    // Update bank explorer level pill (B2 and C1 learners browse the B2+ tier)
+    {
+        const pillLevel = ['A1', 'A2', 'B1'].includes(newLevel) ? newLevel : 'B2';
         document.querySelectorAll('.bank-level-pill').forEach(pill => {
-            pill.classList.toggle('active', pill.dataset.lvl === newLevel);
+            pill.classList.toggle('active', pill.dataset.lvl === pillLevel);
         });
-        bankLevel = newLevel;
+        bankLevel = pillLevel;
         if (typeof bankLoaded !== 'undefined' && bankLoaded) {
             loadVocabBank(1);
         }
@@ -1233,7 +1234,7 @@ document.getElementById('vocabShuffleBtn')?.addEventListener('click', () => {
 });
 
 // =========================================================
-// 2B. 15,000-WORD CEFR VOCABULARY BANK EXPLORER
+// 2B. CEFR VOCABULARY BANK EXPLORER
 // =========================================================
 let bankQuery = '';
 let bankLevel = 'all';
@@ -1258,14 +1259,28 @@ document.getElementById('viewVocabBankBtn')?.addEventListener('click', () => {
     document.getElementById('vocabBankExplorerView').style.display = 'block';
     if (!bankLoaded) {
         loadVocabBank(1);
+        loadBankLevelCounts();
     }
 });
+
+// Fill the level pills with live counts ("A1 (956)")
+async function loadBankLevelCounts() {
+    try {
+        const r = await fetch('/api/vocabulary/bank/stats');
+        const d = await r.json();
+        if (!r.ok) return;
+        document.querySelectorAll('.bank-level-count').forEach(el => {
+            const n = d[el.dataset.lvl];
+            if (typeof n === 'number') el.textContent = `(${n.toLocaleString()})`;
+        });
+    } catch (_) { /* counts are cosmetic */ }
+}
 
 async function loadVocabBank(page = 1) {
     bankPage = page;
     const grid = document.getElementById('bankWordGrid');
     if (!grid) return;
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;"><i class="fa-solid fa-circle-notch fa-spin spin-anim" style="font-size:2rem;color:var(--primary);"></i><p style="margin-top:0.75rem;color:var(--text-muted);">Browsing 15,000-word bank...</p></div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;"><i class="fa-solid fa-circle-notch fa-spin spin-anim" style="font-size:2rem;color:var(--primary);"></i><p style="margin-top:0.75rem;color:var(--text-muted);">Browsing word bank...</p></div>';
 
     try {
         const params = new URLSearchParams({
@@ -1304,7 +1319,7 @@ function renderBankWords(words) {
     const grid = document.getElementById('bankWordGrid');
     if (!grid) return;
     if (!words.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);"><i class="fa-solid fa-box-open" style="font-size:2rem;margin-bottom:0.75rem;"></i><p>No matching words found in the 15,000-word dictionary.</p></div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);"><i class="fa-solid fa-box-open" style="font-size:2rem;margin-bottom:0.75rem;"></i><p>No matching words found in the word bank.</p></div>';
         return;
     }
 

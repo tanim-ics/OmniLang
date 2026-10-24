@@ -6,6 +6,10 @@ import { callOllama, TASK } from '../utils/ollama.js';
 import { awardActivity } from '../utils/game.js';
 
 const router = express.Router();
+
+// VocabBank levels: A1-B1 follow the Goethe-Institut word lists, B2 holds everything beyond them
+const BANK_LEVELS = ['A1', 'A2', 'B1', 'B2'];
+const bankLevelFor = (level) => (BANK_LEVELS.includes(level) ? level : 'B2');
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || '';
 
 // ---- Leitner SRS math (per CLAUDE.md) ----
@@ -290,7 +294,7 @@ router.get('/', async (req, res) => {
         // When cards for this level are fewer than 20, draw fresh, unlearned words from VocabBank!
         if (userCards.length < 20) {
             const needed = 20 - userCards.length;
-            const bankLevel = ['A1', 'A2', 'B1'].includes(userLevel) ? userLevel : 'B1';
+            const bankLevel = bankLevelFor(userLevel);
 
             // Find all words already in user's vocabulary to prevent any duplication
             const allUserWords = await Vocabulary.find({ userId }).select('word').lean();
@@ -394,9 +398,9 @@ router.post('/generate-pack', async (req, res) => {
 
         const resultCards = [];
 
-        // 1. Draw directly from 15,000-Word VocabBank for the target CEFR level
-        if (['A1', 'A2', 'B1'].includes(userLevel)) {
-            const bankQuery = { level: userLevel };
+        // 1. Draw directly from the VocabBank for the target CEFR level (C1 learners get B2+ words)
+        {
+            const bankQuery = { level: bankLevelFor(userLevel) };
             if (topic && topic.trim()) {
                 bankQuery.$or = [
                     { topic: new RegExp(topic.trim(), 'i') },
@@ -486,7 +490,7 @@ router.post('/generate-pack', async (req, res) => {
         if (resultCards.length < targetCount) {
             try {
                 const bankMatches = await VocabBank.aggregate([
-                    { $match: { level: ['A1', 'A2', 'B1'].includes(userLevel) ? userLevel : 'B1' } },
+                    { $match: { level: bankLevelFor(userLevel) } },
                     { $sample: { size: 60 } }
                 ]);
 
@@ -683,7 +687,7 @@ router.get('/bank', async (req, res) => {
         const skip = (pageNum - 1) * limitNum;
 
         const filter = {};
-        if (level && ['A1', 'A2', 'B1'].includes(level)) {
+        if (level && BANK_LEVELS.includes(level)) {
             filter.level = level;
         }
         if (topic && topic !== 'All') {
@@ -718,13 +722,14 @@ router.get('/bank', async (req, res) => {
 // GET /api/vocabulary/bank/stats — return count metrics for the 15k bank
 router.get('/bank/stats', async (_req, res) => {
     try {
-        const [total, a1, a2, b1] = await Promise.all([
+        const [total, a1, a2, b1, b2] = await Promise.all([
             VocabBank.countDocuments(),
             VocabBank.countDocuments({ level: 'A1' }),
             VocabBank.countDocuments({ level: 'A2' }),
-            VocabBank.countDocuments({ level: 'B1' })
+            VocabBank.countDocuments({ level: 'B1' }),
+            VocabBank.countDocuments({ level: 'B2' })
         ]);
-        res.json({ total, A1: a1, A2: a2, B1: b1 });
+        res.json({ total, A1: a1, A2: a2, B1: b1, B2: b2 });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

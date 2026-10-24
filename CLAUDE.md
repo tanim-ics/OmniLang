@@ -11,6 +11,7 @@ Local-first, CEFR-aligned (A1–C1) German learning app. A local Ollama model (d
 - Tests: `npm test` (admin/auth scripts in `tests/`)
 - Vocab bank audit/repair: `npm run audit-bank` / `python3 scripts/repair_vocab_bank.py`
 - Force vocab bank reseed: `npm run reseed-bank` (also reseeds automatically when the data file hash changes)
+- Vocab bank rebuild (CEFR levels + meanings): `.cache/vocab-bank/venv/bin/python scripts/goethe_wordlists.py`, then `python3 scripts/rebuild_vocab_bank.py`, then `python3 scripts/legacy_glosses.py`. A1–B1 levels come from the Goethe-Institut word lists (PDFs cached in `.cache/`, never committed); everything else is `B2` ("B2+"). Meanings come from Wiktionary (kaikki.org). Hand corrections live in `scripts/vocab_bank_review.tsv` and `scripts/vocab_bank_curated.tsv`, hand-written example sentences in `scripts/vocab_bank_examples.tsv`.
 - In **both** modes Ollama runs on the host. Docker on macOS has no GPU access, so never containerize Ollama there.
 
 ## Architecture
@@ -55,6 +56,7 @@ public/
 - `User.currentLevel` / `Conversation.level` / `Vocabulary.level`: `['A1','A2','B1','B2','C1']`
 - `Conversation.messages[].sender`: `['user','ai']`
 - `Vocabulary.srsStage`: integer 1–5 (Leitner box)
+- `VocabBank.level`: `['A1','A2','B1','B2']`. A1–B1 follow the Goethe-Institut word lists; `B2` means everything beyond them ("B2+").
 
 ## Learning engines
 
@@ -105,7 +107,7 @@ public/
 - Memory on a 24 GB Mac: mistral-nemo 12B Q4 ≈ 7.5 GB loaded with 4k context, 100% GPU.
 
 ## Known gaps / next steps
-- Vocab bank glosses and examples have been repaired; reseeding also refreshes stale template examples in deck cards without changing SRS progress.
+- Vocab bank meanings and examples were reviewed by hand (every entry has an example). Reseeding also refreshes deck cards that still carry an old bank translation or sentence (`src/data/vocabBankLegacyGlosses.json`), without changing SRS progress.
 - Proofreader `rule` labels are sometimes imprecise even when the correction itself is right. The UI therefore leads with the diff.
 - "Google/Apple" sign-in buttons are local placeholders, not real OAuth.
 - Story generation takes about 15–20 s (non-streaming by spec). Streaming the story text would improve perceived speed.
