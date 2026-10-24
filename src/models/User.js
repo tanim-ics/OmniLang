@@ -83,6 +83,9 @@ const userSchema = new mongoose.Schema({
     },
     avatar:            { type: String, default: '🇩🇪' },
     streak:            { type: Number, default: 0 },
+    lastStudyDate:     { type: String, default: '' }, // YYYY-MM-DD (local) of last rewarded practice
+    streakFreezes:     { type: Number, default: 0, min: 0, max: 2 },
+    bestCombo:         { type: Number, default: 0 },
     lastActiveAt:      { type: Date,   default: Date.now },
     xp:                { type: Number, default: 0 },
     totalWordsLearned: { type: Number, default: 0 },

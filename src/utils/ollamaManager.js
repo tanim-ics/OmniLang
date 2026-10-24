@@ -44,6 +44,8 @@ function findOllamaBinary() {
         return process.env.OLLAMA_BIN;
     }
     const candidates = [
+        '/opt/homebrew/bin/ollama',
+        '/Applications/Ollama.app/Contents/Resources/ollama',
         '/usr/local/bin/ollama',
         '/usr/bin/ollama',
         '/bin/ollama',
@@ -99,6 +101,21 @@ export async function ensureOllamaRunning() {
         return false;
     }
 
+    // macOS: prefer the Ollama menu-bar app — it runs on Metal and manages its own updates.
+    if (process.platform === 'darwin' && existsSync('/Applications/Ollama.app')) {
+        console.log('⚡ Launching Ollama.app (Metal GPU)...');
+        const opener = spawn('open', ['-g', '-a', 'Ollama'], { detached: true, stdio: 'ignore' });
+        opener.on('error', () => {});
+        opener.unref();
+        for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 1000));
+            if (await isOllamaReachable()) {
+                console.log(`✓ Ollama.app is running on ${baseUrl}`);
+                return true;
+            }
+        }
+    }
+
     console.log('⚡ Starting Ollama GPU server in background...');
     try {
         const ollamaBin = findOllamaBinary();
@@ -117,11 +134,11 @@ export async function ensureOllamaRunning() {
         const gpuEnv = {
             ...process.env,
             PATH: systemPath,
-            CUDA_VISIBLE_DEVICES: '0',
+            ...(process.platform === 'darwin' ? {} : { CUDA_VISIBLE_DEVICES: '0' }),
             OLLAMA_FLASH_ATTENTION: '1',
             OLLAMA_NUM_PARALLEL: '1',
             OLLAMA_ORIGINS: '*',
-            OLLAMA_KEEP_ALIVE: '24h'
+            OLLAMA_KEEP_ALIVE: process.env.OLLAMA_KEEP_ALIVE || '1h'
         };
 
         let spawnError = null;
@@ -167,9 +184,11 @@ export async function preloadModel(modelName) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: modelName,
-                keep_alive: '24h' // Keep resident in GPU VRAM
+                keep_alive: process.env.OLLAMA_KEEP_ALIVE || '1h',
+                // Must match utils/ollama.js — a different num_ctx forces Ollama to reload the model.
+                options: { num_ctx: Number(process.env.OLLAMA_NUM_CTX) || 4096 }
             }),
-            signal: AbortSignal.timeout(30000)
+            signal: AbortSignal.timeout(90000) // cold load of a 12B model from disk
         });
 
         if (res.ok) {

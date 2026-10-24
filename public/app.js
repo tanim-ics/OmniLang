@@ -12,12 +12,10 @@ if (!auth) {
 
 const USER_ID = auth.userId || ('u_' + Math.random().toString(36).slice(2, 10));
 let currentLevel = auth.currentLevel || 'A2';
-let activeTheme  = auth.theme || localStorage.getItem('tanim_theme') || 'dark-glass';
+let activeTheme  = window.Game ? Game.getAppearance() : 'system';
 let ttsEnabled   = true;
 let ttsRate      = auth.ttsRate || 0.95;
 
-// Apply initial theme
-document.documentElement.setAttribute('data-theme', activeTheme);
 
 // ---- HELPERS ----
 function esc(s) {
@@ -73,13 +71,14 @@ function updateNavState() {
     if (dropdownHandle) dropdownHandle.textContent = formattedNick;
 
     const navStreak = document.getElementById('navStreakCount');
-    if (navStreak) navStreak.textContent = `${auth.streak || 1} Day${(auth.streak || 1) !== 1 ? 's' : ''}`;
+    if (navStreak) navStreak.textContent = `${auth.streak || 0}`;
 
     const navXp = document.getElementById('navXpCount');
     if (navXp) navXp.textContent = `${auth.xp || 0} XP`;
 
     const navModel = document.getElementById('navModelName');
     if (navModel) navModel.textContent = auth.selectedModel || 'No model selected';
+    if (window.Game) Game.renderPlayer();
 
     const coachTag = document.getElementById('coachLevelTag');
     if (coachTag) coachTag.textContent = currentLevel;
@@ -474,19 +473,13 @@ document.getElementById('settingsQuickBtn')?.addEventListener('click', () => ope
 
 // Theme toggle
 document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
-    const themes = ['dark-glass', 'midnight-aurora', 'indigo-glow', 'light-glass'];
-    const curIdx = themes.indexOf(activeTheme);
-    const nextTheme = themes[(curIdx + 1) % themes.length];
-    setTheme(nextTheme);
+    Game.cycleAppearance();
+    activeTheme = Game.getAppearance();
 });
 
 function setTheme(themeName) {
-    activeTheme = themeName;
-    document.documentElement.setAttribute('data-theme', activeTheme);
-    localStorage.setItem('tanim_theme', activeTheme);
-    document.querySelectorAll('.theme-select-card').forEach(card => {
-        card.classList.toggle('selected', card.dataset.thm === activeTheme);
-    });
+    Game.setAppearance(themeName);
+    activeTheme = Game.getAppearance();
 }
 
 // ---- OVERLAY PANEL CONTROLS ----
@@ -536,6 +529,8 @@ async function loadDailyPracticeStatus() {
         const d = await r.json();
         if (!r.ok) return;
 
+        Game.renderDaily(d);
+
         // 1. Update Date & Time labels
         const dateLabel = document.getElementById('syncDateLabel');
         if (dateLabel) dateLabel.textContent = d.dateFormatted || 'Today';
@@ -561,11 +556,6 @@ async function loadDailyPracticeStatus() {
 
         // 3. Update Overall Completion Bar
         const comp = d.summary || {};
-        const compStatus = document.getElementById('dailyCompletionStatus');
-        if (compStatus) {
-            compStatus.textContent = `${comp.completedCount || 0} / ${comp.total || 5} Completed (${comp.completionPct || 0}%)`;
-            if (comp.allDone) compStatus.style.color = 'var(--accent-emerald)';
-        }
         const compBar = document.getElementById('dailyCompletionBar');
         if (compBar) compBar.style.width = `${comp.completionPct || 0}%`;
 
@@ -585,9 +575,7 @@ async function loadDailyPracticeStatus() {
             const badge = document.getElementById(cardBadgeId);
             if (badge) {
                 badge.className = `module-daily-badge ${m.completed ? 'badge-daily-done' : 'badge-daily-due'}`;
-                badge.innerHTML = m.completed
-                    ? `<i class="fa-solid fa-circle-check"></i> ${esc(m.badge)}`
-                    : `<i class="fa-solid fa-fire"></i> ${esc(m.badge)}`;
+                badge.textContent = m.badge;
             }
         }
 
@@ -609,7 +597,7 @@ function updateResetCountdownDisplay() {
     const pad   = n => String(n).padStart(2, '0');
     const countdownEl = document.getElementById('syncResetCountdown');
     if (countdownEl) {
-        countdownEl.textContent = `⏳ Resets in ${hours}h ${pad(mins)}m ${pad(secs)}s`;
+        countdownEl.textContent = `Neue Quests in ${hours} h ${pad(mins)} min`;
     }
 }
 
@@ -618,7 +606,8 @@ loadDailyPracticeStatus();
 // =========================================================
 // 1. AI LEARNING COACH INTEGRATION
 // =========================================================
-async function loadAiCoachRecommendations() {
+let coachPollTimer = null, coachPolls = 0;
+async function loadAiCoachRecommendations(forceRefresh = false) {
     const titleEl = document.getElementById('coachFocusTitle');
     const reasonEl = document.getElementById('coachReasoning');
     const missionsEl = document.getElementById('coachMissionsContainer');
@@ -626,13 +615,24 @@ async function loadAiCoachRecommendations() {
     const proverbEn = document.getElementById('proverbEn');
     const tipText = document.getElementById('coachTipText');
 
-    titleEl.textContent = 'Generating your personalized focus...';
-    reasonEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim" style="color:var(--primary);"></i> Analyzing your CEFR mastery and database stats...';
+    if (forceRefresh === true || !titleEl.dataset.loaded) {
+        titleEl.textContent = 'Dein Fokus wird geplant…';
+        reasonEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim" style="color:var(--primary);"></i> Lukas analysiert deine letzten Fehler und Karten…';
+    }
+    titleEl.dataset.loaded = '1';
 
     try {
-        const res = await fetch(`/api/coach/recommendations?userId=${encodeURIComponent(USER_ID)}`);
+        const res = await fetch(`/api/coach/recommendations?userId=${encodeURIComponent(USER_ID)}${forceRefresh === true ? '&refresh=1' : ''}`);
         const data = await res.json();
         const rec = data.recommendations || {};
+        // The server answers instantly with a curated plan and builds the AI plan in the background.
+        clearTimeout(coachPollTimer);
+        if (data.pending && coachPolls < 6) {
+            coachPolls++;
+            coachPollTimer = setTimeout(() => loadAiCoachRecommendations(), 15000);
+        } else {
+            coachPolls = 0;
+        }
 
         titleEl.textContent = rec.focusTopic || 'German Practice Focus';
         reasonEl.textContent = rec.reasoning || 'Focus on consistent daily review to reinforce speaking and vocabulary.';
@@ -698,9 +698,9 @@ async function loadAiCoachRecommendations() {
         reasonEl.textContent = 'Keep practicing with daily conversation, vocabulary spaced repetition, and graded writing.';
     }
 }
-loadAiCoachRecommendations();
+// (initial load happens in applyGlobalLevelChange at startup)
 
-document.getElementById('refreshCoachBtn')?.addEventListener('click', loadAiCoachRecommendations);
+document.getElementById('refreshCoachBtn')?.addEventListener('click', () => loadAiCoachRecommendations(true));
 
 // Coach on-demand advice modal
 document.getElementById('askCoachModalBtn')?.addEventListener('click', () => {
@@ -828,6 +828,7 @@ function renderVocabCard() {
 
     const c = vocabQueue[vocabIdx];
     const srsStageNum = c.srsStage || 1;
+    if (vocabIdx === 0) Game.resetCombo();
 
     stage.innerHTML = `
         <div class="flashcard-3d-wrap" id="fcWrap">
@@ -898,9 +899,13 @@ function renderVocabCard() {
     });
 }
 
+// Locked from the moment a card is rated until the next card is on screen,
+// so fast key presses can't rate the same card twice.
+let cardBusy = false;
+
 function toggleCardFlip() {
     const wrap = document.getElementById('fcWrap');
-    if (!wrap) return;
+    if (!wrap || cardBusy) return;
     wrap.classList.toggle('flipped');
     const isFlipped = wrap.classList.contains('flipped');
     const actRow = document.getElementById('srsActionRow');
@@ -920,7 +925,7 @@ window.addEventListener('keydown', (e) => {
         toggleCardFlip();
     } else if (['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(e.code)) {
         const wrap = document.getElementById('fcWrap');
-        if (wrap && wrap.classList.contains('flipped') && vocabQueue[vocabIdx]) {
+        if (wrap && wrap.classList.contains('flipped') && vocabQueue[vocabIdx] && !cardBusy) {
             const map = { Digit1: 'again', Digit2: 'hard', Digit3: 'good', Digit4: 'easy' };
             rateCard(map[e.code], vocabQueue[vocabIdx]);
         }
@@ -928,23 +933,21 @@ window.addEventListener('keydown', (e) => {
 });
 
 async function rateCard(rating, card) {
+    if (cardBusy) return;
+    cardBusy = true;
     document.querySelectorAll('.srs-rate-btn').forEach(b => b.disabled = true);
     let nextStage = card.srsStage || 1;
+    const comboNow = Game.onCardRated(rating === 'good' || rating === 'easy');
 
     try {
         const r = await fetch('/api/vocabulary/rate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: USER_ID, wordId: card.id, rating, source: card.source || 'user' })
+            body: JSON.stringify({ userId: USER_ID, wordId: card.id, rating, combo: comboNow, source: card.source || 'user' })
         });
         const data = await r.json();
         if (data.srsStage) nextStage = data.srsStage;
-        if (data.xpEarned) {
-            auth.xp = (auth.xp || 0) + data.xpEarned;
-            localStorage.setItem('tanim_auth', JSON.stringify(auth));
-            updateNavState();
-            loadDailyPracticeStatus();
-        }
+        applyProgress(data);
     } catch (_) {}
 
     vocabReviewed++;
@@ -974,7 +977,7 @@ async function rateCard(rating, card) {
     if (progLbl) progLbl.textContent = `${vocabReviewed} / ${vocabQueue.length}`;
 
     vocabIdx++;
-    renderVocabCard();
+    setTimeout(() => { cardBusy = false; renderVocabCard(); }, 380);
 }
 
 function renderDeckComplete() {
@@ -1719,15 +1722,8 @@ async function endCurrentChatSession() {
             statusBadge.style.color = 'var(--text-muted)';
         }
 
-        // Award XP
-        if (stats.xpEarned) {
-            auth.xp = (auth.xp || 0) + stats.xpEarned;
-            localStorage.setItem('tanim_auth', JSON.stringify(auth));
-            updateNavState();
-            loadDailyPracticeStatus();
-        }
-
-        showLevelToast('✓ Chat ended! +10 XP awarded 🎉');
+        applyProgress(d);
+        showLevelToast(stats.xpEarned ? `✓ Gespräch beendet · +${stats.xpEarned} XP` : '✓ Gespräch beendet');
         await loadChatSessions();
 
     } catch (err) {
@@ -1792,15 +1788,10 @@ async function sendChat() {
             if (titleEl && data.title) titleEl.textContent = data.title;
         }
 
-        appendAiMessage(data.reply);
+        appendAiMessage(data.reply, true, data.correction || false);
         if (ttsEnabled) speakGerman(data.reply.replace(/\[Correction:[\s\S]*?\]/i, '').trim());
-
-        if (data.xpEarned) {
-            auth.xp = (auth.xp || 0) + data.xpEarned;
-            localStorage.setItem('tanim_auth', JSON.stringify(auth));
-            updateNavState();
-            loadDailyPracticeStatus();
-        }
+        if (data.correction) Game.play('wrong'); else Game.play('correct');
+        applyProgress(data, { at: (() => { const r = document.getElementById('chatSendBtn').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top }; })() });
 
         // Silently update sidebar sessions
         loadChatSessions();
@@ -1824,30 +1815,57 @@ function appendUserMessage(text, scroll = true) {
     if (scroll) box.scrollTop = box.scrollHeight;
 }
 
-function appendAiMessage(raw, scroll = true) {
+// Word-level diff (LCS) so the learner sees exactly what changed.
+// loose = ignore case and punctuation (speech transcripts); the corrected wording is shown.
+function diffWords(a, b, loose = false) {
+    const A = a.split(/\s+/).filter(Boolean), B = b.split(/\s+/).filter(Boolean);
+    const key = t => loose ? t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') : t;
+    const same = (x, y) => key(x) === key(y);
+    const dp = Array.from({ length: A.length + 1 }, () => new Array(B.length + 1).fill(0));
+    for (let i = A.length - 1; i >= 0; i--)
+        for (let j = B.length - 1; j >= 0; j--)
+            dp[i][j] = same(A[i], B[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const out = [];
+    let i = 0, j = 0;
+    while (i < A.length || j < B.length) {
+        if (i < A.length && j < B.length && same(A[i], B[j])) { out.push(esc(loose ? B[j] : A[i])); i++; j++; }
+        else if (j < B.length && (i >= A.length || dp[i][j + 1] >= dp[i + 1][j])) { out.push(`<ins>${esc(B[j])}</ins>`); j++; }
+        else { out.push(`<del>${esc(A[i])}</del>`); i++; }
+    }
+    return out.join(' ');
+}
+
+function appendAiMessage(raw, scroll = true, correction = null) {
     const box = document.getElementById('chatMessagesContainer');
     if (!box) return;
     const el = document.createElement('div');
     el.className = 'chat-bubble-ai';
 
-    const corrMatch = raw.match(/^\[Correction:\s*([\s\S]*?)\]/i);
+    const corrMatch = raw.match(/^\[Correction:\s*([\s\S]*?)\]\s*/i);
     let corrHtml = '', bodyText = raw;
 
     if (corrMatch) {
-        bodyText = raw.replace(/^\[Correction:\s*[\s\S]*?\]/i, '').trim();
+        bodyText = raw.slice(corrMatch[0].length).trim();
+        // Live replies carry a structured correction; history replays parse the "→ „…“" text form.
+        const corrected = correction?.corrected || (corrMatch[1].match(/→\s*„([\s\S]*)“\s*$/) || [])[1];
+        const prevUser = correction?.original || [...box.querySelectorAll('.chat-bubble-user .chat-msg-body')].pop()?.textContent || '';
+        const rules = correction ? correction.explanation : corrMatch[1].replace(/→\s*„[\s\S]*“\s*$/, '').trim();
         corrHtml = `
             <div class="chat-correction-card">
-                <div class="chat-correction-title"><i class="fa-solid fa-circle-exclamation"></i> Grammar Correction</div>
-                <div>${esc(corrMatch[1].trim())}</div>
+                <div class="chat-correction-title"><i class="fa-solid fa-wand-magic-sparkles"></i> So ist es richtig</div>
+                ${corrected && prevUser ? `<div class="corr-diff">${diffWords(prevUser, corrected)}</div>` : `<div>${esc(corrMatch[1].trim())}</div>`}
+                ${rules ? `<div class="corr-rules"><i class="fa-solid fa-book"></i> ${esc(rules)}</div>` : ''}
             </div>
         `;
+    } else if (correction === false) {
+        corrHtml = '<div class="chat-perfect-chip">✓ Fehlerfrei · +2 XP</div>';
     }
 
     el.innerHTML = `
         <div class="chat-avatar-badge ai-avatar-badge">AI</div>
         <div style="display:flex;flex-direction:column;gap:0.35rem;max-width:100%;">
-            <div class="chat-msg-body">${esc(bodyText)}</div>
             ${corrHtml}
+            <div class="chat-msg-body">${esc(bodyText)}</div>
         </div>
     `;
     box.appendChild(el);
@@ -1860,9 +1878,7 @@ function appendChatLoading() {
     el.className = 'chat-bubble-ai';
     el.innerHTML = `
         <div class="chat-avatar-badge ai-avatar-badge">AI</div>
-        <div class="chat-msg-body" style="color:var(--text-muted);">
-            <i class="fa-solid fa-circle-notch fa-spin spin-anim"></i> Lukas denkt nach...
-        </div>
+        <div class="chat-msg-body" aria-label="Lukas schreibt…"><span class="typing-dots"><span></span><span></span><span></span></span></div>
     `;
     box.appendChild(el);
     box.scrollTop = box.scrollHeight;
@@ -1922,9 +1938,12 @@ document.getElementById('chatMicBtn')?.addEventListener('click', function() {
 // 4. SPEAKING MODE
 // =========================================================
 let speakingActive = false;
+let currentSpeakingQuestion = '';
 document.getElementById('bigSpeakingMicBtn')?.addEventListener('click', function() {
     if (speakingActive) return;
     speakingActive = true;
+    const promptNow = document.getElementById('speakingPromptText').textContent.trim();
+    if (!/^(Listening|Processing|Tap the|Microphone|Connection)/.test(promptNow)) currentSpeakingQuestion = promptNow;
     const btn = this;
     btn.style.transform = 'scale(1.1)';
     btn.style.background = 'linear-gradient(135deg, #ef4444 0%, #f97316 100%)';
@@ -1943,15 +1962,20 @@ document.getElementById('bigSpeakingMicBtn')?.addEventListener('click', function
                 const r = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: transcript, userId: USER_ID, level: currentLevel })
+                    body: JSON.stringify({ message: transcript, userId: USER_ID, level: currentLevel, isSpeaking: true, speakingPrompt: currentSpeakingQuestion })
                 });
                 const d = await r.json();
                 const reply = d.reply || 'Entschuldigung, ich habe das nicht verstanden.';
-                const cleanReply = reply.replace(/\[Correction:[\s\S]*?\]/i, '').trim();
+                const cleanReply = reply.replace(/\[Correction:[\s\S]*?\]\s*/i, '').trim();
 
                 const respBox = document.getElementById('speakingResponseBox');
-                respBox.textContent = reply;
+                respBox.innerHTML = (d.correction
+                    ? `<div class="chat-correction-card" style="margin-bottom:10px;text-align:left;"><div class="chat-correction-title"><i class="fa-solid fa-wand-magic-sparkles"></i> So ist es richtig</div><div class="corr-diff">${diffWords(transcript, d.correction.corrected, true)}</div>${d.correction.explanation ? `<div class="corr-rules">${esc(d.correction.explanation)}</div>` : ''}</div>`
+                    : '<div class="chat-perfect-chip" style="margin:0 auto 10px;">✓ Fehlerfrei gesprochen</div>')
+                    + `<div>${esc(cleanReply)}</div>`;
                 respBox.style.display = 'block';
+                Game.play(d.correction ? 'wrong' : 'correct');
+                applyProgress(d);
                 document.getElementById('speakingPromptText').textContent = 'Tap the microphone to speak again';
 
                 speakGerman(cleanReply);
@@ -2036,8 +2060,24 @@ document.getElementById('gradeEssaySubmitBtn')?.addEventListener('click', async 
     const btn = document.getElementById('gradeEssaySubmitBtn');
     const resultsPane = document.getElementById('essayResultsPane');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim"></i> Evaluating with Local AI...';
-    resultsPane.innerHTML = '<div style="text-align:center;padding:3rem;"><i class="fa-solid fa-circle-notch fa-spin spin-anim" style="font-size:2rem;color:var(--primary);"></i><p style="margin-top:1rem;color:var(--text-muted);">Assessing CEFR grammar rubric & vocabulary...</p></div>';
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim"></i> Lukas korrigiert…';
+    const sentenceCount = (text.match(/[^.!?]+[.!?]*/g) || []).filter(t => t.trim().length > 1).length;
+    const steps = [
+        `Prüfe ${sentenceCount} Satz${sentenceCount === 1 ? '' : 'e'} auf Grammatikfehler`,
+        'Bewerte Aufgabe, Wortschatz und Kohärenz',
+        'Berechne CEFR-Niveau und Punktzahl'
+    ];
+    resultsPane.innerHTML = `<div class="essay-loading-steps">${steps.map((t, i) => `<div class="essay-step${i === 0 ? ' active' : ''}" data-step="${i}"><i class="fa-solid ${i === 0 ? 'fa-circle-notch fa-spin' : 'fa-circle'}"></i> ${t}</div>`).join('')}<div style="font-size:12px;color:var(--label-3);margin-top:8px;">Läuft lokal auf deinem Mac — dauert etwa ${Math.max(10, sentenceCount * 3 + 8)} Sekunden.</div></div>`;
+    // Advance the visual steps on an estimated schedule (the server answers once at the end).
+    const stepTimer = setInterval(() => {
+        const active = resultsPane.querySelector('.essay-step.active');
+        const next = active?.nextElementSibling;
+        if (!active || !next || !next.classList.contains('essay-step')) return;
+        active.classList.replace('active', 'done');
+        active.querySelector('i').className = 'fa-solid fa-circle-check';
+        next.classList.add('active');
+        next.querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
+    }, Math.max(4000, sentenceCount * 2600));
 
     try {
         const r = await fetch('/api/essay/grade', {
@@ -2049,18 +2089,14 @@ document.getElementById('gradeEssaySubmitBtn')?.addEventListener('click', async 
         if (!r.ok) throw new Error(d.error);
 
         renderEssayResults(d);
-
-        if (d.xpEarned) {
-            auth.xp = (auth.xp || 0) + d.xpEarned;
-            localStorage.setItem('tanim_auth', JSON.stringify(auth));
-            updateNavState();
-            loadDailyPracticeStatus();
-        }
+        Game.play(d.score >= 80 ? 'achievement' : 'correct');
+        applyProgress(d);
     } catch (err) {
         resultsPane.innerHTML = `<div style="color:var(--accent-rose);text-align:center;padding:2rem;"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(err.message)}</div>`;
     } finally {
+        clearInterval(stepTimer);
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-star"></i> Grade My Essay with AI';
+        btn.innerHTML = '<i class="fa-solid fa-star"></i> Text bewerten';
     }
 });
 
@@ -2097,9 +2133,26 @@ function renderEssayResults(d) {
             <div>
                 <span class="badge-level badge-b1">${esc(d.cefrGrade)} Evaluated</span>
                 <h4 style="font-size:1.15rem;font-weight:800;color:var(--text-main);margin:0.25rem 0;">Score: ${d.score}/100</h4>
-                <span style="font-size:0.8125rem;color:var(--accent-amber);font-weight:700;"><i class="fa-solid fa-bolt"></i> +${d.xpEarned || 15} XP Earned</span>
+                <span style="font-size:0.8125rem;color:var(--accent-amber);font-weight:700;"><i class="fa-solid fa-bolt"></i> +${d.xpEarned || 0} XP</span>
             </div>
         </div>
+
+        ${d.rubric ? `
+            <div class="rubric-grid">
+                ${[['task', 'Aufgabe'], ['grammar', 'Grammatik'], ['vocabulary', 'Wortschatz'], ['coherence', 'Kohärenz']].map(([k, label]) => `
+                    <div class="rubric-item">
+                        <div class="rubric-item-top"><span>${label}</span><b>${d.rubric[k]}/25</b></div>
+                        <div class="rubric-bar"><div style="width:${d.rubric[k] * 4}%;background:${d.rubric[k] >= 20 ? 'var(--sys-green)' : d.rubric[k] >= 13 ? 'var(--sys-orange)' : 'var(--sys-red)'}"></div></div>
+                    </div>`).join('')}
+            </div>` : ''}
+
+        ${d.correctedText && (d.grammarErrors || []).length ? `
+            <div>
+                <label style="font-size:12px;font-weight:600;color:var(--label-2);margin-bottom:0.4rem;display:block;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Korrigierte Version
+                </label>
+                <div class="corrected-text">${esc(d.correctedText)}</div>
+            </div>` : ''}
 
         ${d.overall ? `
             <div style="background:var(--primary-light);border:1px solid var(--border-glass-glow);border-radius:var(--radius-md);padding:1rem;">
@@ -2135,7 +2188,7 @@ document.getElementById('generateStoryBtn')?.addEventListener('click', async () 
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim"></i> Generating...';
-    body.innerHTML = '<div style="text-align:center;padding:3rem;"><i class="fa-solid fa-circle-notch fa-spin spin-anim" style="font-size:2rem;color:var(--primary);"></i><p style="margin-top:1rem;color:var(--text-muted);">Crafting a CEFR-aligned German story...</p></div>';
+    body.innerHTML = '<div class="story-title skeleton" style="width:55%">&nbsp;</div>' + Array.from({ length: 6 }, (_, i) => `<div class="skeleton" style="height:16px;margin:12px 0;width:${[96, 88, 92, 70, 94, 60][i]}%"></div>`).join('') + '<p style="margin-top:1rem;color:var(--label-3);font:500 13px var(--font-main);text-align:center;">Lukas schreibt eine Geschichte für dein Niveau…</p>';
 
     try {
         const r = await fetch('/api/reading/generate', {
@@ -2146,13 +2199,8 @@ document.getElementById('generateStoryBtn')?.addEventListener('click', async () 
         const d = await r.json();
         if (!r.ok) throw new Error(d.error);
 
-        renderClickableStory(d.story);
-        if (d.xpEarned) {
-            auth.xp = (auth.xp || 0) + d.xpEarned;
-            localStorage.setItem('tanim_auth', JSON.stringify(auth));
-            updateNavState();
-            loadDailyPracticeStatus();
-        }
+        renderClickableStory(d.story, d.title, d.questions || []);
+        applyProgress(d);
     } catch (err) {
         body.innerHTML = `<div style="color:var(--accent-rose);text-align:center;padding:2rem;"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(err.message)}</div>`;
     } finally {
@@ -2161,31 +2209,91 @@ document.getElementById('generateStoryBtn')?.addEventListener('click', async () 
     }
 });
 
-function renderClickableStory(text) {
+function renderClickableStory(text, title = '', questions = []) {
     const body = document.getElementById('storyContentBody');
-    const tokens = text.split(/(\s+)/);
-
-    const html = tokens.map(t => {
+    const wordify = para => para.split(/(\s+)/).map(t => {
         if (/^\s+$/.test(t)) return t;
-        const clean = t.replace(/^[\u201C\u201D\u201E\u00BB\u00AB"'(]+|[\u201C\u201D\u201E\u00BB\u00AB"'),;:.!?]+$/g, '');
+        const clean = t.replace(/^[“”„»«"'(]+|[“”„»«"'),;:.!?]+$/g, '');
         if (!clean || /^\d+$/.test(clean)) return esc(t);
-
         const idx = t.indexOf(clean);
-        const pre = esc(t.slice(0, idx));
-        const post = esc(t.slice(idx + clean.length));
-        return `${pre}<span class="story-clickable-word" data-word="${esc(clean)}">${esc(clean)}</span>${post}`;
+        return `${esc(t.slice(0, idx))}<span class="story-clickable-word" data-word="${esc(clean)}">${esc(clean)}</span>${esc(t.slice(idx + clean.length))}`;
     }).join('');
 
-    body.innerHTML = `<p>${html}</p>`;
+    const paragraphs = text.split(/\n\s*\n|\n/).map(p => p.trim()).filter(Boolean);
+    body.innerHTML = `
+        ${title ? `<div class="story-title">${esc(title)}</div>` : ''}
+        ${paragraphs.map(p => `<p>${wordify(p)}</p>`).join('')}
+        ${questions.length ? `
+            <div class="quiz-card" id="storyQuiz" style="font-family:var(--font-main);">
+                <div style="border-top:0.5px solid var(--separator);margin:26px 0 4px;"></div>
+                <div style="font-size:13px;font-weight:600;color:var(--label-2);text-transform:uppercase;letter-spacing:.04em;">Verständnis-Quiz · +3 XP pro Antwort</div>
+                ${questions.map((q, qi) => `
+                    <div class="quiz-q">${qi + 1}. ${esc(q.question)}</div>
+                    <div class="quiz-options" data-q="${qi}">
+                        ${q.options.map((o, oi) => `<button class="quiz-opt" data-o="${oi}">${esc(o)}</button>`).join('')}
+                    </div>`).join('')}
+                <div class="quiz-result" id="quizResult"></div>
+            </div>` : ''}
+    `;
 
     body.querySelectorAll('.story-clickable-word').forEach(span => {
         span.addEventListener('click', e => handleStoryWordClick(span, e));
     });
+
+    let answered = 0, right = 0;
+    body.querySelectorAll('.quiz-options').forEach(group => {
+        const q = questions[Number(group.dataset.q)];
+        group.querySelectorAll('.quiz-opt').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const ok = Number(btn.dataset.o) === q.answer;
+                group.querySelectorAll('.quiz-opt').forEach(b => {
+                    b.disabled = true;
+                    if (Number(b.dataset.o) === q.answer) b.classList.add('correct');
+                });
+                if (!ok) btn.classList.add('wrong');
+                Game.play(ok ? 'correct' : 'wrong');
+                answered++; if (ok) right++;
+                if (answered === questions.length) {
+                    document.getElementById('quizResult').textContent = right === questions.length
+                        ? `🎉 Perfekt! ${right}/${questions.length} richtig`
+                        : `${right}/${questions.length} richtig — lies die Stellen noch einmal nach.`;
+                    try {
+                        const r = await fetch('/api/reading/quiz', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: USER_ID, correct: right, total: questions.length })
+                        });
+                        applyProgress(await r.json());
+                    } catch (_) {}
+                }
+            });
+        });
+    });
 }
+
+// The sentence around a clicked word gives the translator its context.
+function sentenceAround(span) {
+    const para = span.closest('p');
+    if (!para) return span.dataset.word;
+    const text = para.textContent;
+    let offset = 0;
+    for (const node of para.querySelectorAll('.story-clickable-word')) {
+        const at = text.indexOf(node.textContent, offset);
+        if (node === span) { offset = at; break; }
+        offset = at + node.textContent.length;
+    }
+    const start = Math.max(text.lastIndexOf('.', offset), text.lastIndexOf('!', offset), text.lastIndexOf('?', offset)) + 1;
+    const endMatch = text.slice(offset).search(/[.!?]/);
+    const end = endMatch === -1 ? text.length : offset + endMatch + 1;
+    return text.slice(start, end).trim();
+}
+
+let currentMiningEntry = null;
 
 async function handleStoryWordClick(span, e) {
     currentMiningWord = span.dataset.word;
     currentMiningWordSpan = span;
+    currentMiningEntry = null;
 
     const tooltip = document.getElementById('wordMiningTooltip');
     document.getElementById('tooltipDeWord').textContent = currentMiningWord;
@@ -2207,11 +2315,16 @@ async function handleStoryWordClick(span, e) {
         const r = await fetch('/api/reading/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ word: currentMiningWord, context: '', userId: USER_ID })
+            body: JSON.stringify({ word: currentMiningWord, context: sentenceAround(span), userId: USER_ID })
         });
         const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        currentMiningEntry = d;
+        // Show the dictionary form (with article) so the deck learns "der Bahnhof", not "Bahnhof".
+        document.getElementById('tooltipDeWord').textContent = d.deckWord || currentMiningWord;
         document.getElementById('tooltipEnTrans').textContent = d.translation || currentMiningWord;
-        document.getElementById('tooltipWordType').textContent = d.type || 'word';
+        document.getElementById('tooltipWordType').textContent = d.deckWord && d.deckWord.toLowerCase() !== currentMiningWord.toLowerCase()
+            ? `${d.type || 'word'} · im Text: ${currentMiningWord}` : (d.type || 'word');
         document.getElementById('tooltipExample').textContent = d.example ? `"${d.example}"` : '';
     } catch (_) {
         document.getElementById('tooltipEnTrans').textContent = 'Translation unavailable';
@@ -2229,24 +2342,25 @@ document.getElementById('addWordToSrsBtn')?.addEventListener('click', async () =
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin spin-anim"></i> Adding to deck...';
 
     try {
-        await fetch('/api/vocabulary/add', {
+        const r = await fetch('/api/vocabulary/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: USER_ID,
-                word: currentMiningWord,
+                word: currentMiningEntry?.deckWord || currentMiningWord,
                 translation: document.getElementById('tooltipEnTrans').textContent,
-                example: document.getElementById('tooltipExample').textContent,
+                example: (currentMiningEntry?.example || '').trim(),
                 level: currentLevel,
-                addedFrom: 'reading'
+                addedFrom: 'reading',
+                sourceText: currentMiningWordSpan ? sentenceAround(currentMiningWordSpan) : ''
             })
         });
+        const added = await r.json();
 
         if (currentMiningWordSpan) currentMiningWordSpan.classList.add('mined');
         document.getElementById('wordMiningTooltip').style.display = 'none';
-        auth.xp = (auth.xp || 0) + 2;
-        localStorage.setItem('tanim_auth', JSON.stringify(auth));
-        updateNavState();
+        if (added.duplicate) Game.island({ icon: '📚', title: 'Schon in deinem Deck', sub: currentMiningEntry?.deckWord || currentMiningWord, duration: 1600 });
+        else { Game.play('correct'); applyProgress(added); }
         vocabLoaded = false;
     } catch (_) {
         btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Failed';
@@ -2749,6 +2863,10 @@ function loadSettingsModal() {
     document.getElementById('ttsRateSlider').value         = ttsRate;
     document.getElementById('ttsRateVal').textContent      = `${ttsRate}x`;
 
+    const soundToggle = document.getElementById('soundToggle');
+    if (soundToggle) soundToggle.checked = Game.soundOn();
+    Game.setAppearance(Game.getAppearance());
+
     // Highlight selected avatar
     document.querySelectorAll('.avatar-option-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.av === selectedAvatar);
@@ -2826,6 +2944,11 @@ document.querySelectorAll('.theme-select-card').forEach(card => {
     card.addEventListener('click', () => {
         setTheme(card.dataset.thm);
     });
+});
+
+document.getElementById('soundToggle')?.addEventListener('change', (e) => {
+    Game.setSound(e.target.checked);
+    if (e.target.checked) Game.play('correct');
 });
 
 document.getElementById('dailyGoalXpSlider')?.addEventListener('input', (e) => {
@@ -2953,8 +3076,7 @@ function speakGerman(text) {
     utterance.rate = ttsRate;
     utterance.pitch = 1.0;
 
-    const voices = window.speechSynthesis.getVoices();
-    const deVoice = voices.find(v => v.lang.startsWith('de') || v.lang.includes('DE'));
+    const deVoice = Game.voice();
     if (deVoice) utterance.voice = deVoice;
     window.speechSynthesis.speak(utterance);
 }
