@@ -58,8 +58,32 @@ export async function proofread(model, level, message, speaking) {
 
 // Split German prose into sentences (keeps the terminal punctuation).
 export function splitSentences(text) {
-    return (text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]+["»“]?|[^.!?]+$/g) || [])
-        .map(t => t.trim()).filter(t => t.length > 1);
+    const normalized = text.replace(/\s+/g, ' ');
+    const sentences = [];
+    let start = 0;
+    while (start < normalized.length) {
+        let punctuation = normalized.length;
+        for (const mark of '.!?') {
+            const index = normalized.indexOf(mark, start);
+            if (index !== -1 && index < punctuation) punctuation = index;
+        }
+        if (punctuation === normalized.length) {
+            const remaining = normalized.slice(start).trim();
+            if (remaining.length > 1) sentences.push(remaining);
+            break;
+        }
+        if (punctuation === start) {
+            while ('.!?'.includes(normalized[start])) start++;
+            continue;
+        }
+        let end = punctuation + 1;
+        while (end < normalized.length && '.!?'.includes(normalized[end])) end++;
+        if ('"»“'.includes(normalized[end] || '\0')) end++;
+        const sentence = normalized.slice(start, end).trim();
+        if (sentence.length > 1) sentences.push(sentence);
+        start = end;
+    }
+    return sentences;
 }
 
 /** Proofread every sentence with bounded concurrency; returns per-sentence results in order. */
