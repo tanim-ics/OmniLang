@@ -386,7 +386,7 @@ finish() {
 for a in "$@"; do
     case "$a" in
         --stop) stop_all; exit 0;;
-        -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+        -h|--help) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
     esac
 done
 
