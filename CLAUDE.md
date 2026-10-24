@@ -9,12 +9,14 @@ Local-first, CEFR-aligned (A1–C1) German learning app. A local Ollama model (d
 - Dev server with reload: `npm run dev` (needs MongoDB on 27017 and Ollama on 11434)
 - Health: `curl localhost:5001/api/health` · Models: `curl localhost:11434/api/tags` · Doctor: `npm run doctor`
 - Tests: `npm test` (admin/auth scripts in `tests/`)
+- Vocab bank audit/repair: `npm run audit-bank` / `python3 scripts/repair_vocab_bank.py`
+- Force vocab bank reseed: `npm run reseed-bank` (also reseeds automatically when the data file hash changes)
 - In **both** modes Ollama runs on the host. Docker on macOS has no GPU access, so never containerize Ollama there.
 
 ## Architecture
 ```
 start.sh / OmniLang.command   launcher (native | docker), writes .env (MONGO_URI, TZ), state in .omnilang/
-src/server.js                 Express gateway :5001, seeds 15k VocabBank, pre-warms the model
+src/server.js                 Express gateway :5001, versioned VocabBank seeding, pre-warms the model
 src/utils/
   ollama.js                   callOllama / callOllamaJSON, TASK presets, model cache, foreground priority
   proofread.js                temperature-0 sentence proofreader (shared by chat, speaking, essay)
@@ -29,7 +31,7 @@ src/routes/
   coach.js     daily AI study plan (background, cached per day), ask-the-coach
   settings.js / admin.js   model discovery & switching / admin panel API
 src/models/   User (XP, streak, lastStudyDate, streakFreezes, bestCombo, quests, history, achievements),
-              Conversation, Vocabulary (user deck), VocabBank (15k seeded words)
+              Conversation, Vocabulary (user deck), VocabBank (versioned word bank)
 public/
   dashboard.html  home ("Heute") + full-screen module sheets
   apple.css       Apple design layer (tokens for light/dark, components, game UI) — loaded after style.css
@@ -73,7 +75,7 @@ public/
 ### Reading (reading.js)
 - `/generate` returns `{ title, story, questions[3] }`, sized per CEFR level (`LEVEL_INSTRUCTIONS`). Quiz answers are rewarded via `/quiz` (3 XP each, +5 for a perfect score).
 - `/translate` takes the clicked word **and its sentence** and returns `lemma`, `article`, `translation` and `deckWord`. Separable verbs resolve ("stand … auf" → `aufstehen`), and noun gender is taken from the 15k bank. The deck stores `deckWord` (e.g. `der Bahnhof`), which is the lexical root.
-- Don't use VocabBank glosses for translation: they are machine-generated and noisy (e.g. "geben = will be"). Its article+noun pairs are reliable.
+- Use contextual `/translate` for translations; VocabBank article+noun pairs support noun-gender lookup.
 
 ### SRS (vocabulary.js)
 - `good`/`easy` = correct → `srsStage = min(stage+1, 5)`, next review = now + stage×3 days.
@@ -103,7 +105,7 @@ public/
 - Memory on a 24 GB Mac: mistral-nemo 12B Q4 ≈ 7.5 GB loaded with 4k context, 100% GPU.
 
 ## Known gaps / next steps
-- `src/data/vocabBank15k.json` glosses need a cleanup pass. Examples: function words turned into nouns (`das Ich = ego`, `das Aber`) and wrong senses (`geben = will be`).
+- Vocab bank glosses and examples have been repaired; reseeding also refreshes stale template examples in deck cards without changing SRS progress.
 - Proofreader `rule` labels are sometimes imprecise even when the correction itself is right. The UI therefore leads with the diff.
 - "Google/Apple" sign-in buttons are local placeholders, not real OAuth.
 - Story generation takes about 15–20 s (non-streaming by spec). Streaming the story text would improve perceived speed.
