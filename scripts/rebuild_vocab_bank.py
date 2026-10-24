@@ -203,6 +203,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--bank', default=BANK_PATH)
     ap.add_argument('--examples-limit', type=int, default=4000)
+    ap.add_argument('--examples-dump', metavar='LEVEL',
+                    help='write entries of this level with their current example to .cache for manual writing')
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--check', action='store_true', help='let the local LLM pick the everyday sense for B2+ words')
     ap.add_argument('--review-dump', help='write A1/A2/B1 entries of this level to .cache for manual review')
@@ -337,6 +339,13 @@ def main():
     if args.examples_limit:
         index = build_index({split_headword(e['word'])[1] for e in core})
         stage_examples(core, index, args.examples_limit)
+    if args.examples_dump:
+        path = os.path.join(CACHE_DIR, f"ex-todo-{args.examples_dump}.txt")
+        with open(path, 'w', encoding='utf-8') as f:
+            for e in bank:
+                if e['level'] == args.examples_dump and e['word'] not in handwritten:
+                    f.write(f"{e['word']} | {e['translation']} | {e.get('example', '')} | {e.get('exampleEn', '')}\n")
+        print(f"Example list written to {path}")
     for e in bank:
         e.pop('_curated', None)
         e.pop('_manual', None)
