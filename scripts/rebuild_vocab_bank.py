@@ -16,7 +16,8 @@ Re-levels and re-glosses src/data/vocabBank15k.json (run after repair_vocab_bank
      core (vocab_bank_review.tsv) override everything.
   5. With --check, the local LLM picks the everyday sense of B2+ words among their Wiktionary
      senses (it can only choose a real meaning, not invent one).
-  6. A1-B1 words without an example get an LLM-written one (validated, cached).
+  6. Hand-written example sentences (vocab_bank_examples.tsv) are applied; A1-B1 words still
+     without one get a dictionary or LLM-written sentence (validated, cached).
 
 Duplicates are keyed by the displayed headword ("die See" and "der See" are different
 words; "Sängerin" and "die Sängerin" are the same).
@@ -40,6 +41,7 @@ from repair_vocab_bank import load_curated, stage_examples, CURATED_PATH
 
 GOETHE_LEVELS = os.path.join(CACHE_DIR, 'goethe/levels.json')
 REVIEW_PATH = os.path.join(os.path.dirname(__file__), 'vocab_bank_review.tsv')
+EXAMPLES_PATH = os.path.join(os.path.dirname(__file__), 'vocab_bank_examples.tsv')
 GENDER_ARTICLE = {'m': 'der', 'f': 'die', 'n': 'das', 'p': 'die'}
 LEVEL_ORDER = {'A1': 0, 'A2': 1, 'B1': 2, 'B2': 3}
 
@@ -176,6 +178,21 @@ def headword_for(item, W):
     return lemma, (poses[0] if poses else 'word')
 
 
+def load_examples(path=EXAMPLES_PATH):
+    """Hand-written example sentences: word | example | exampleEn."""
+    out = {}
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                cols = [c.strip() for c in line.split(' | ')]
+                if len(cols) == 3 and cols[1] and cols[2]:
+                    out[cols[0]] = (cols[1], cols[2])
+    return out
+
+
 def load_reviews():
     entries, removals = load_curated(REVIEW_PATH) if os.path.exists(REVIEW_PATH) else ({}, [])
     return entries, set(removals)
@@ -304,10 +321,17 @@ def main():
         print('Sense check (B2+)')
         stage_check(bank, W)
 
-    # 5. Examples for the A1-B1 core
+    # 5. Examples: hand-written ones first, then dictionary/LLM sentences for the rest of the A1-B1 core
+    handwritten = load_examples()
+    for e in bank:
+        if e['word'] in handwritten:
+            e['example'], e['exampleEn'] = handwritten[e['word']]
+            e['_curated'] = True
+            stats['example_handwritten'] += 1
     core = [e for e in bank if e['level'] != 'B2']
     for e in core:
-        e['_curated'] = bool(reviewed.get(e['word'], {}).get('example') or curated.get(e['word'], {}).get('example'))
+        e['_curated'] = e.get('_curated') or bool(reviewed.get(e['word'], {}).get('example')
+                                                  or curated.get(e['word'], {}).get('example'))
     if args.examples_limit:
         index = build_index({split_headword(e['word'])[1] for e in core})
         stage_examples(core, index, args.examples_limit)
