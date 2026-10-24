@@ -1,70 +1,111 @@
-# CLAUDE.md - German Learning Platform (Langey Clone - Complete Edition)
+# CLAUDE.md — OmniLang (German learning, game edition)
 
-## Project Context
-A local-first, premium, CEFR-aligned (A1-B2) German learning application featuring conversational AI immersion, automated writing evaluation, graded reading engines, and vocabulary spaced-repetition loops driven entirely by local Ollama microservices.
+Local-first, CEFR-aligned (A1–C1) German learning app. A local Ollama model (default `mistral-nemo:12b`) powers a chat tutor, speaking drills, essay grading, graded stories and vocabulary generation. Progress is gamified: XP, player levels, streaks with freezes, daily quests, combos and achievements. Primary target: **macOS on Apple Silicon** (Ollama runs natively on Metal); Linux works too.
 
-## Expanded System Architecture Map
-- `/public/index.html`              -> Landing page
-- `/public/dashboard.html`          -> Main UI learning command center
-- `/src/server.js`                  -> Main Express API gateway configuration (port 5001)
-- `/src/models/User.js`            -> User profiles, CEFR metrics, streaks, SRS, learning history & achievements
-- `/src/models/Conversation.js`    -> Chronological immersive chat memory threads
-- `/src/models/Vocabulary.js`      -> Spaced Repetition (SRS) flashcard index collections
-- `/src/routes/auth.js`            -> User profile, authentication, settings and progress sync
-- `/src/routes/coach.js`           -> AI Learning Coach & personalized study recommendations
-- `/src/routes/settings.js`        -> Ollama model auto-discovery & system configuration
-- `/src/routes/chat.js`             -> Immersive speech/text conversational controller endpoints
-- `/src/routes/vocabulary.js`       -> Leitner-system spaced repetition database operations
-- `/src/routes/reading.js`          -> Dynamic CEFR level text generator endpoint
-- `/src/routes/essay.js`            -> Advanced text evaluation, grading, and rubric analytics
+## Run it
+- **Launcher (asks Docker or Native, remembers the choice):** `./start.sh` · double-click `OmniLang.command` in Finder · `npm run launch`
+  - Skip the question: `./start.sh --native` / `./start.sh --docker` · stop everything: `./start.sh --stop`
+  - The launcher never installs or downloads without an interactive "yes" (non-TTY = no).
+- Dev server with reload: `npm run dev` (needs MongoDB on 27017 and Ollama on 11434)
+- Health: `curl localhost:5001/api/health` · Models: `curl localhost:11434/api/tags` · Doctor: `npm run doctor`
+- Tests: `npm test` (admin/auth scripts in `tests/`)
+- Vocab bank audit/repair: `npm run audit-bank` / `python3 scripts/repair_vocab_bank.py`
+- Force vocab bank reseed: `npm run reseed-bank` (also reseeds automatically when the data file hash changes)
+- In **both** modes Ollama runs on the host. Docker on macOS has no GPU access, so never containerize Ollama there.
 
-## Critical Developer Commands
-- **Automated 1-Step Setup:** `./setup.sh` (or `npm run setup`)
-- **System Doctor & Diagnostics:** `npm run doctor` (or `./setup.sh --doctor`)
-- **Boot Local Stack (Dev):** `npm run dev`
-- **Boot Local Stack (Prod):** `npm start`
-- **Docker Compose Stack:** `npm run docker:up` / `npm run docker:down`
-- **Verify Local Engine:** `curl http://localhost:11434/api/tags`
-- **Database Status Check:** `mongosh --eval "db.adminCommand('ping')"`
-- **Health Check:** `curl http://localhost:5001/api/health`
-- **Vocab Bank Audit / Repair:** `npm run audit-bank` / `python3 scripts/repair_vocab_bank.py` (edits `src/data/vocabBank15k.json`; curated overrides in `scripts/vocab_bank_curated.tsv`)
-- **Reseed Vocab Bank:** `npm run reseed-bank` (the server also reseeds automatically when the data file's hash changes)
+## Architecture
+```
+start.sh / OmniLang.command   launcher (native | docker), writes .env (MONGO_URI, TZ), state in .omnilang/
+src/server.js                 Express gateway :5001, versioned VocabBank seeding, pre-warms the model
+src/utils/
+  ollama.js                   callOllama / callOllamaJSON, TASK presets, model cache, foreground priority
+  proofread.js                temperature-0 sentence proofreader (shared by chat, speaking, essay)
+  game.js                     XP, level curve, streaks + freezes, daily quests, achievements → progress snapshot
+  ollamaManager.js            daemon start (Ollama.app on macOS), pre-warm, .env model switch
+src/routes/
+  auth.js      accounts, profile, daily-status (quests), settings; exports getOrCreateDailyStatus, checkAndAwardAchievements
+  chat.js      tutor chat + speaking turns (proofread ∥ reply), sessions, end-of-chat bonus
+  essay.js     2-stage grading: per-sentence proofreading → rubric scoring
+  reading.js   story + 3-question quiz, quiz rewards, contextual word lookup (lemma + article)
+  vocabulary.js Leitner SRS deck, AI word packs, 15k bank browser, add/rate
+  coach.js     daily AI study plan (background, cached per day), ask-the-coach
+  settings.js / admin.js   model discovery & switching / admin panel API
+src/models/   User (XP, streak, lastStudyDate, streakFreezes, bestCombo, quests, history, achievements),
+              Conversation, Vocabulary (user deck), VocabBank (versioned word bank)
+public/
+  dashboard.html  home ("Heute") + full-screen module sheets
+  apple.css       Apple design layer (tokens for light/dark, components, game UI) — loaded after style.css
+  game.js         client game layer: applyProgress(), island notifications, sounds, level-up sheet, combo, rings, quests, appearance
+  app.js          module logic (vocab, chat, speaking, writing, reading, progress, settings)
+  style.css       legacy base styles (kept; apple.css overrides via tokens)
+```
 
-## Technology Constraints & Strict Conventions
-- **Module Format:** ES Modules strictly (`import/export`). No CommonJS `require()`.
-- **Error Boundaries:** All asynchronous controllers must be wrapped in `try/catch` layers routing errors to a standardized json container response: `{ error: "Structured explanation" }`.
-- **Database Validation Rules:**
-  - `User.currentLevel`: Enforce strict enum validations: `['A1', 'A2', 'B1', 'B2']`.
-  - `Conversation.messages`: Objects must track `sender` directly matching `['user', 'ai']`.
-  - `Vocabulary.srsStage`: Tracks Leitner progression index layers integer scale `1` through `5`.
+## Conventions (must follow)
+- **ES modules only** (`import`/`export`), Node ≥ 18. No `require()`.
+- Every async route is wrapped in `try/catch` and answers errors as `{ error: "explanation" }`.
+- **All learner rewards go through `awardActivity(user, activity, opts)`** in `src/utils/game.js`. Never touch `user.xp`, `studyHistory` or `dailyModuleStatus` by hand in a route. Return its snapshot as `progress` (and `xpEarned: progress.xpGained`) so the client can animate it.
+- On the client, hand every such response to `applyProgress(data)`. Never do `auth.xp += …`.
+- Dates for streaks, quests and history are **local** calendar days: use `localDateStr()`, never `toISOString().split('T')[0]` (that's UTC and flips days at the wrong hour in Europe). Docker gets `TZ` from the launcher.
+- LLM calls go through `callOllama` / `callOllamaJSON` with a `TASK.*` preset. Use JSON-schema `format` for anything you parse. Mark non-urgent work `{ background: true }` so it never blocks a learner's request.
+- Keep `num_ctx` identical everywhere (`OLLAMA_NUM_CTX`, default 4096). A different value makes Ollama reload the model (adds ~10 s).
+- Validate model output before storing it (clamp numbers, check enums, drop hallucinated items). See essay.js and reading.js.
+- UI: use the tokens in `apple.css` (`--label`, `--bg-elevated`, `--sys-blue`, …), not hard-coded colors. German UI copy for learner-facing text; English for rules and explanations.
 
-## Local Ollama Integration Protocol
-- **Endpoint Target:** Forward prompt strings to `http://localhost:11434/api/chat`.
-- **Streaming Toggle:** Maintain `"stream": false` parameter structures to simplify data state alignment during heavy multi-collection database queries.
-- **Model Standard:** Standard model is `mistral-nemo:12b` local binary.
+## Validation rules
+- `User.currentLevel` / `Conversation.level` / `Vocabulary.level`: `['A1','A2','B1','B2','C1']`
+- `Conversation.messages[].sender`: `['user','ai']`
+- `Vocabulary.srsStage`: integer 1–5 (Leitner box)
 
-## Specialized Engine Feature Specifications
+## Learning engines
 
-### 1. Immersive Conversational Mode & Audio Processing
-- **AI Response Prompting:** Cap chat responses to a max of 3 sentences. If grammatical errors occur, append a clear feedback string enclosed in square brackets: `[Correction: ...]` at the absolute beginning of the return text payload.
-- **Voice Immersion:** Utilize the Web Speech API (`SpeechSynthesisUtterance`) to voice-render incoming AI responses locally. Utilize `webkitSpeechRecognition` to process microphoned user input into text values dynamically.
+### Chat & speaking (chat.js)
+- Two LLM calls run in parallel:
+  - **Proofreader** (`proofread.js`): temperature 0. Returns `corrected` text plus `fixes[{wrong, right, rule}]`. A correction counts only if `corrected` differs from the input, ignoring punctuation and whitespace. Case is compared for typed text, ignored for speech transcripts.
+  - **Reply:** German, at most 3 sentences, ending with one follow-up question. Max 3 sentences is also enforced in code by `capSentences`.
+- Stored reply format (spec): `[Correction: <rules> → „<corrected sentence>“] <reply>`, with the correction at the very start. The API also returns a structured `correction` object; the client renders a word-level diff.
+- Speaking turns send `isSpeaking` plus the question being answered (`speakingPrompt`), are single-turn (not stored as a chat thread) and count toward the speaking quest.
+- Measured on mistral-nemo:12b: 16/16 on a mixed set of correct and incorrect A2 sentences; about 3–4 s per message when warm.
 
-### 2. Graded Reading & Vocabulary Context Mining
-- **Story Generation:** The reading route must pass dynamic prompts requesting short paragraphs focused entirely on specific CEFR constraints (e.g., *A1: simple structures, present tense, focus on public transport vocabulary*).
-- **Interactive Parsing:** Client UI text displays stories wrapped as clickable word spans (`<span>word</span>`). Clicking elements calls `/api/vocabulary/add`, assigning the lexical root string directly into the user's Leitner SRS dictionary database.
+### Essay (essay.js) → `/api/essay/grade`
+1. Proofread every sentence (concurrency 3) → `grammarErrors` and `correctedText`.
+2. Scoring call (JSON schema) informed by the verified errors → `cefrGrade` and `rubric` (task/grammar/vocabulary/coherence, each 0–25). The grammar sub-score is capped by the measured error rate; `score` is the rubric sum.
+- Response keeps the spec fields `{ cefrGrade, score, grammarErrors[{error,fix,rule}], vocabularyEnhancements[{overusedWord,betterAlternative}] }` plus `rubric`, `correctedText`, `overall`, `progress`.
+- XP = 10 + score/5.
 
-### 3. Spaced Repetition System (SRS) Mechanics
-- **Review Math Engine:** Track intervals using simplified interval steps based on last performance rating:
-  - Wrong answer: Reset `srsStage` to `1`, calculate `nextReviewDate = current_time + 1_day`.
-  - Correct answer: Increment `srsStage` by 1. Set `nextReviewDate = current_time + (srsStage * 3) days`.
+### Reading (reading.js)
+- `/generate` returns `{ title, story, questions[3] }`, sized per CEFR level (`LEVEL_INSTRUCTIONS`). Quiz answers are rewarded via `/quiz` (3 XP each, +5 for a perfect score).
+- `/translate` takes the clicked word **and its sentence** and returns `lemma`, `article`, `translation` and `deckWord`. Separable verbs resolve ("stand … auf" → `aufstehen`), and noun gender is taken from the 15k bank. The deck stores `deckWord` (e.g. `der Bahnhof`), which is the lexical root.
+- Use contextual `/translate` for translations; VocabBank article+noun pairs support noun-gender lookup.
 
-### 4. Advanced Essay Assessment Rubric
-- **Writing Prompts:** Route `/api/essay/grade` processes user paragraph text inputs matching structured challenges.
-- **Evaluation Payload Structure:** Prompt the LLM to output a JSON string tracking performance analytics using this explicit formatting schema:
-```json
-  {
-    "cefrGrade": "A2",
-    "score": 82,
-    "grammarErrors": [{"error": "...", "fix": "...", "rule": "..."}],
-    "vocabularyEnhancements": [{"overusedWord": "...", "betterAlternative": "..."}]
-  }
+### SRS (vocabulary.js)
+- `good`/`easy` = correct → `srsStage = min(stage+1, 5)`, next review = now + stage×3 days.
+- `again`/`hard` = wrong → `srsStage = 1`, next review = now + 1 day.
+- A word counts toward `totalWordsLearned` the first time it is recalled correctly.
+- The client sends the current `combo`; the server adds +1 XP per 5 in a row (max +3).
+
+## Game design (src/utils/game.js)
+- **XP per activity** (`ACTIVITIES`):
+  - card: correct 2 / wrong 1
+  - word added: 3
+  - chat message: 3, plus 2 if it's error-free
+  - speaking turn: 5
+  - chat completed: 10
+  - story: 10
+  - essay: 10–30
+  - quiz: 3 per correct answer
+- **Daily quests:** vocab 10 cards · chat 5 · speaking 3 · writing 1 · reading 1. Each completed quest gives +10; all five give +50.
+- **Level curve:** XP to reach level L = 50(L−1) + 25(L−1)². Titles run from Sprach-Neuling 🌱 to Sprachlegende 👑. The client mirrors this in `public/game.js` (`levelFromXp`) only for instant UI; the server is authoritative.
+- **Streak:** extended by the first rewarded activity of a local day. Logging in never extends it. Every 7-day milestone earns a streak freeze (max 2), which is used up automatically when exactly one day is missed.
+- **Achievements:** defined in `checkAndAwardAchievements` (auth.js). Unlocks come back in `progress.achievements` and show as island notifications.
+
+## Ollama protocol
+- Endpoint `OLLAMA_ENDPOINT` (default `http://localhost:11434/api/chat`), `stream: false`, `think: false`, `keep_alive: OLLAMA_KEEP_ALIVE` (default 1h).
+- Fallback: at most one other installed chat model, never embedding models. Never loop through every model.
+- Model list cached for 30 s. Timeout `OLLAMA_TIMEOUT_MS` (120 s). `OLLAMA_DEBUG=1` logs latency per call.
+- Memory on a 24 GB Mac: mistral-nemo 12B Q4 ≈ 7.5 GB loaded with 4k context, 100% GPU.
+
+## Known gaps / next steps
+- Vocab bank glosses and examples have been repaired; reseeding also refreshes stale template examples in deck cards without changing SRS progress.
+- Proofreader `rule` labels are sometimes imprecise even when the correction itself is right. The UI therefore leads with the diff.
+- "Google/Apple" sign-in buttons are local placeholders, not real OAuth.
+- Story generation takes about 15–20 s (non-streaming by spec). Streaming the story text would improve perceived speed.

@@ -1,36 +1,46 @@
 # OmniLang — AI-Powered German Learning Platform
 
-A local-first, privacy-respecting, CEFR-aligned (A1–B2) German learning ecosystem featuring real-time conversational AI immersion, automated essay grading, graded reading comprehension, and Leitner spaced-repetition vocabulary loops. 
+A local-first, privacy-respecting, CEFR-aligned (A1–C1), game-like German learning app featuring real-time conversational AI immersion, automated essay grading, graded reading comprehension, and Leitner spaced-repetition vocabulary loops. 
 
 Runs 100% locally on your hardware using Ollama — zero cloud API keys, zero subscription fees, zero privacy leaks.
 
 ---
 
-## ⚡ Quick Start (1-Minute Setup)
+## ⚡ Quick Start
 
-### Option A: One-Command Automated Setup (Recommended)
-
-OmniLang includes an automated setup and deployment script that verifies your environment, auto-configures settings, ensures MongoDB and Ollama are active, downloads required models, and launches the app:
+### macOS (Apple Silicon recommended)
 
 ```bash
 git clone git@github.com:tanim-ics/OmniLang.git
 cd OmniLang
-./setup.sh
+./start.sh
 ```
 
-Then open **http://localhost:5001** in your browser. That's it!
+Or double-click **`OmniLang.command`** in Finder. The launcher asks how to run:
 
-#### Setup Script Options
+| Choice | What runs where |
+|---|---|
+| **1 · Native** | Node + MongoDB on your Mac (Homebrew, or MongoDB alone in Docker). Fastest start. |
+| **2 · Docker** | App + MongoDB in containers via Docker Compose. |
+
+In both modes **Ollama runs natively** so the model uses the Apple GPU (Metal); Docker on macOS can't use the GPU. The launcher checks every prerequisite, offers to install what's missing (Ollama, Node, MongoDB, the `mistral-nemo:12b` model, about 7 GB), remembers your choice and opens the browser.
+
 | Command | Action |
 |---|---|
-| `./setup.sh` | Full automated setup + launch in production mode |
-| `./setup.sh --dev` | Full automated setup + launch in development mode (hot-reload via nodemon) |
-| `./setup.sh --doctor` | Run system diagnostics & verify all prerequisites without launching |
-| `./setup.sh --docker` | Launch the entire stack via Docker Compose |
+| `./start.sh` | Interactive launch (remembers last mode) |
+| `./start.sh --native` / `--docker` | Launch without the question |
+| `./start.sh --stop` | Stop the server / containers |
+| `npm run dev` | Hot-reload dev server (needs MongoDB + Ollama running) |
+
+**Hardware:** mistral-nemo 12B (Q4) uses about 7.5 GB of unified memory, so 16 GB+ is comfortable. On an M5 with 24 GB, chat replies take about 3–4 s, stories about 15–20 s, and essay grading about 20–30 s.
+
+### Linux
+
+`./setup.sh` (legacy one-step setup) or `./start.sh`.
 
 ---
 
-### Option B: Docker Compose (Zero-Config Container)
+### Docker Compose (manual)
 
 If you have Docker and Docker Compose installed:
 
@@ -44,7 +54,7 @@ Open **http://localhost:5001**.
 
 ---
 
-### Option C: Manual Installation
+### Manual installation
 
 If you prefer manual control:
 

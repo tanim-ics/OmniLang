@@ -2,8 +2,8 @@ import express from 'express';
 import Vocabulary from '../models/Vocabulary.js';
 import VocabBank   from '../models/VocabBank.js';
 import User        from '../models/User.js';
-import { checkAndAwardAchievements, getOrCreateDailyStatus } from './auth.js';
-import { callOllama } from '../utils/ollama.js';
+import { callOllama, TASK } from '../utils/ollama.js';
+import { awardActivity } from '../utils/game.js';
 
 const router = express.Router();
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || '';
@@ -197,12 +197,13 @@ ${cefrGuide}
 Generate ${requestedCount} brand-new, practical German vocabulary words or idiomatic expressions ${topicPrompt}.
 Do NOT use any of these known words: [${excludeList}].
 
-Return ONLY a valid JSON array of objects with NO markdown formatting around it:
-[{"word":"<German word with der/die/das for nouns>","translation":"<English translation>","type":"noun/verb/adjective/phrase","example":"<German example strictly at ${level} level>","exampleEn":"<English translation of example>"}]`;
+Return ONLY a JSON object of this shape:
+{"words":[{"word":"<German word with der/die/das for nouns>","translation":"<English translation>","type":"noun/verb/adjective/phrase","example":"<German example strictly at ${level} level>","exampleEn":"<English translation of example>"}]}`;
 
     try {
         const result = await callOllama(model, [{ role: 'user', content: prompt }], {
-            options: { num_predict: 1200, temperature: 0.85 }
+            format: 'json',
+            options: TASK.vocab
         });
         
         let parsed = null;
@@ -221,6 +222,7 @@ Return ONLY a valid JSON array of objects with NO markdown formatting around it:
             }
         }
 
+        if (parsed && !Array.isArray(parsed)) parsed = parsed.words || parsed.vocabulary || parsed.items || null;
         if (Array.isArray(parsed) && parsed.length > 0) {
             const valid = parsed.filter(item => item && item.word && item.translation);
             if (valid.length > 0) return valid;
@@ -583,7 +585,8 @@ router.post('/add', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields: userId, word' });
         }
 
-        const exists = await Vocabulary.findOne({ userId, word: { $regex: new RegExp(`^${word.trim()}$`, 'i') } });
+        const safe = word.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const exists = await Vocabulary.findOne({ userId, word: { $regex: new RegExp(`^${safe}$`, 'i') } });
         if (exists) {
             return res.json({ success: true, duplicate: true, word: exists });
         }
@@ -600,27 +603,14 @@ router.post('/add', async (req, res) => {
             nextReviewDate: new Date()
         });
 
-        // Update user stats
-        const todayStr = new Date().toISOString().split('T')[0];
-        let user = await User.findOne({ userId });
+        let progress = null;
+        const user = await User.findOne({ userId });
         if (user) {
-            user.totalWordsLearned = (user.totalWordsLearned || 0) + 1;
-            user.xp = (user.xp || 0) + 3;
-            user.lastActiveAt = new Date();
-
-            if (!user.studyHistory) user.studyHistory = [];
-            let hist = user.studyHistory.find(h => h.date === todayStr);
-            if (hist) {
-                hist.wordsLearned = (hist.wordsLearned || 0) + 1;
-                hist.xp = (hist.xp || 0) + 3;
-            } else {
-                user.studyHistory.push({ date: todayStr, xp: 3, wordsLearned: 1, messagesSent: 0, essaysGraded: 0, minutesSpent: 1 });
-            }
-            await checkAndAwardAchievements(user);
+            progress = await awardActivity(user, 'word_added');
             await user.save();
         }
 
-        res.json({ success: true, word: vocab });
+        res.json({ success: true, word: vocab, xpEarned: progress?.xpGained || 0, progress });
 
     } catch (err) {
         console.error('[vocab] Add error:', err.message);
@@ -646,14 +636,12 @@ router.get('/mine', async (req, res) => {
 // POST /api/vocabulary/rate — record SRS rating (Leitner system)
 router.post('/rate', async (req, res) => {
     try {
-        const { userId, wordId, rating } = req.body;
+        const { userId, wordId, rating, combo = 0 } = req.body;
         if (!userId || !wordId || !rating) {
             return res.status(400).json({ error: 'Missing required fields: userId, wordId, rating' });
         }
 
         const correct = (rating === 'good' || rating === 'easy');
-        const xpEarned = correct ? 2 : 1;
-        const todayStr = new Date().toISOString().split('T')[0];
 
         const vocab = await Vocabulary.findById(wordId);
         if (!vocab) return res.status(404).json({ error: 'Word not found' });
@@ -662,39 +650,23 @@ router.post('/rate', async (req, res) => {
         vocab.srsStage       = next.srsStage;
         vocab.nextReviewDate = next.nextReviewDate;
         vocab.lastReviewedAt = new Date();
+        const firstTimeRight = correct && !vocab.correctCount;
         if (correct) vocab.correctCount++;
         else         vocab.incorrectCount++;
         await vocab.save();
 
-        let user = await User.findOne({ userId });
+        let progress = null;
+        const user = await User.findOne({ userId });
         if (user) {
-            user.xp = (user.xp || 0) + xpEarned;
-            if (correct) user.totalWordsLearned = (user.totalWordsLearned || 0) + 1;
-            user.lastActiveAt = new Date();
-
-            // Update daily module status
-            const dailyStatus = getOrCreateDailyStatus(user, todayStr);
-            dailyStatus.vocabCount = (dailyStatus.vocabCount || 0) + 1;
-            if (dailyStatus.vocabCount >= 5) {
-                dailyStatus.vocabCompleted = true;
-            }
-
-            if (!user.studyHistory) user.studyHistory = [];
-            let hist = user.studyHistory.find(h => h.date === todayStr);
-            if (hist) {
-                hist.xp = (hist.xp || 0) + xpEarned;
-                if (correct) hist.wordsLearned = (hist.wordsLearned || 0) + 1;
-                hist.minutesSpent = (hist.minutesSpent || 0) + 1;
-            } else {
-                user.studyHistory.push({ date: todayStr, xp: xpEarned, wordsLearned: correct ? 1 : 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 1 });
-            }
-            user.markModified('dailyModuleStatus');
-            user.markModified('studyHistory');
-            await checkAndAwardAchievements(user);
+            // A word counts as learned the first time it is recalled correctly, not on every review.
+            if (firstTimeRight) user.totalWordsLearned = (user.totalWordsLearned || 0) + 1;
+            const streak = Math.max(0, Math.min(500, Number(combo) || 0));
+            if (correct && streak > (user.bestCombo || 0)) user.bestCombo = streak;
+            progress = await awardActivity(user, correct ? 'vocab_correct' : 'vocab_wrong', { combo: correct ? streak : 0 });
             await user.save();
         }
 
-        res.json({ success: true, nextReview: next.nextReviewDate, srsStage: next.srsStage, xpEarned });
+        res.json({ success: true, nextReview: next.nextReviewDate, srsStage: next.srsStage, xpEarned: progress?.xpGained || 0, progress });
 
     } catch (err) {
         console.error('[vocab] Rate error:', err.message);
