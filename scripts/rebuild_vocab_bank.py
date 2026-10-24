@@ -120,8 +120,9 @@ def sense_options(entries, wtype):
     return opts[:5]
 
 
-def stage_check(bank, W, batch_size=20):
-    """mistral picks the everyday sense among Wiktionary's senses for B2+ words (cached)."""
+def stage_check(bank, W, call_llm=True, batch_size=20):
+    """mistral picks the everyday sense among Wiktionary's senses for B2+ words (cached).
+    Without call_llm only the cached answers are applied."""
     from repair_vocab_bank import Cache, ollama_json, keyed_schema
     cache = Cache('llm-sense-check.json')
     todo = []
@@ -132,7 +133,7 @@ def stage_check(bank, W, batch_size=20):
         opts = sense_options(wikt_entries(W, lemma, e['type'], art), e['type'])
         if len(opts) >= 2:
             todo.append((e, opts))
-    pending = [(e, o) for e, o in todo if e['word'] + '\t' + '|'.join(o) not in cache.data]
+    pending = [(e, o) for e, o in todo if e['word'] + '\t' + '|'.join(o) not in cache.data] if call_llm else []
     print(f"  sense check: {len(todo)} entries with several senses, {len(pending)} not cached", flush=True)
     t0 = time.time()
     for b in range(0, len(pending), batch_size):
@@ -280,6 +281,8 @@ def main():
                 stats['gloss_from_wiktionary'] += 1
             if not e['translation']:
                 stats['dropped_no_gloss'] += 1
+                if word in goethe_level:
+                    unresolved.append((goethe_level[word], word + ' (no gloss)', word))
                 continue
         if art and not e.get('plural'):
             plurals = [x['plural'] for x in entries if x.get('plural')]
@@ -317,9 +320,8 @@ def main():
                 f.write(f"{lvl} | {word} | {raw}\n")
         print(f"Review list written to {path}")
 
-    if args.check:
-        print('Sense check (B2+)')
-        stage_check(bank, W)
+    print('Sense check (B2+)' + ('' if args.check else ', cached answers only'))
+    stage_check(bank, W, call_llm=args.check)
 
     # 5. Examples: hand-written ones first, then dictionary/LLM sentences for the rest of the A1-B1 core
     handwritten = load_examples()
