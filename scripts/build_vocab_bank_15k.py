@@ -4,6 +4,10 @@ build_vocab_bank_15k.py
 Constructs a comprehensive 15,000-word German-English CEFR vocabulary bank (A1-B1)
 without duplicates, fully lemmatized with articles (der/die/das), parts of speech,
 accurate English translations, level-appropriate example sentences, and semantic topics.
+
+NOTE: the raw output takes the first dictionary sense and template example sentences.
+Run scripts/repair_vocab_bank.py afterwards to fix glosses, prune bogus nominalisations
+and replace the templates (see scripts/audit_vocab_bank.py for the checks).
 """
 
 import os
