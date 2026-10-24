@@ -34,3 +34,6 @@ scratch/
 tmp/
 dist/
 coverage/
+
+# Downloaded sources & LLM cache for vocab bank scripts
+.cache/

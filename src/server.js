@@ -5,8 +5,6 @@ import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-import { readFileSync, existsSync } from 'fs';
-import VocabBank        from './models/VocabBank.js';
 import authRouter       from './routes/auth.js';
 import chatRouter       from './routes/chat.js';
 import vocabularyRouter from './routes/vocabulary.js';
@@ -16,6 +14,7 @@ import coachRouter      from './routes/coach.js';
 import settingsRouter   from './routes/settings.js';
 import adminRouter      from './routes/admin.js';
 import { ensureOllamaRunning, preloadModel } from './utils/ollamaManager.js';
+import { seedVocabBank } from './utils/seedVocabBank.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
@@ -66,25 +65,9 @@ mongoose
     .then(async () => {
         console.log('✓ MongoDB connected successfully');
 
-        // Auto-seed 15,000-word Vocabulary Bank into MongoDB if needed
+        // Seed the Vocabulary Bank; reseeds automatically when src/data/vocabBank15k.json changes
         try {
-            const count = await VocabBank.countDocuments();
-            if (count < 15000) {
-                const dataPath = join(__dirname, 'data/vocabBank15k.json');
-                if (existsSync(dataPath)) {
-                    console.log(`⏳ Seeding 15,000-word Vocabulary Bank into MongoDB (current: ${count})...`);
-                    const words = JSON.parse(readFileSync(dataPath, 'utf-8'));
-                    const batchSize = 2500;
-                    for (let i = 0; i < words.length; i += batchSize) {
-                        const chunk = words.slice(i, i + batchSize);
-                        await VocabBank.insertMany(chunk, { ordered: false }).catch(() => {});
-                    }
-                    const newCount = await VocabBank.countDocuments();
-                    console.log(`✓ 15,000-word Vocabulary Bank ready in MongoDB (${newCount} words)!`);
-                }
-            } else {
-                console.log(`✓ 15,000-word Vocabulary Bank ready in MongoDB (${count} words)`);
-            }
+            await seedVocabBank();
         } catch (err) {
             console.error('Warning: VocabBank seeding notice:', err.message);
         }

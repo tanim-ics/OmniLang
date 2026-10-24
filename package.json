@@ -13,7 +13,9 @@
     "test": "node tests/test_forgot_admin.mjs && node tests/test_admin_platform.mjs",
     "docker:check": "node scripts/docker-preflight.js",
     "docker:up": "node scripts/docker-preflight.js && docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "reseed-bank": "node scripts/reseed-bank.mjs",
+    "audit-bank": "python3 scripts/audit_vocab_bank.py"
   },
   "dependencies": {
     "cors": "^2.8.5",

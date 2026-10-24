@@ -1,0 +1,390 @@
+# Hand-curated vocab bank entries, applied by scripts/repair_vocab_bank.py (stage "curated").
+# Format: word | type | translation | example | exampleEn [| level]
+# Existing entries are overwritten, missing ones are added (level defaults to A1).
+# Lines starting with "- " remove an entry.
+
+# --- Pronouns & articles ---------------------------------------------------
+ich | word | I | Ich wohne in Berlin. | I live in Berlin.
+du | word | you (informal) | Kommst du heute Abend mit? | Are you coming along tonight?
+er | word | he, it | Er arbeitet bei einer Bank. | He works at a bank.
+sie | word | she, they | Sie trinkt gern Tee. | She likes drinking tea.
+es | word | it | Es regnet schon den ganzen Tag. | It has been raining all day.
+wir | word | we | Wir fahren am Wochenende ans Meer. | We are going to the sea at the weekend.
+ihr | word | you (plural), her | Habt ihr schon gegessen? | Have you already eaten?
+Sie | word | you (formal) | Können Sie mir bitte helfen? | Can you help me, please?
+man | word | one, you, people | Hier darf man nicht rauchen. | You are not allowed to smoke here.
+mein | word | my | Das ist mein Bruder. | This is my brother.
+dein | word | your (informal) | Wo ist dein Handy? | Where is your phone?
+sein | verb | to be | Ich bin müde. | I am tired.
+unser | word | our | Unser Haus hat einen Garten. | Our house has a garden.
+euer | word | your (plural) | Ist das euer Auto? | Is that your car?
+der | word | the (masculine) | Der Bus kommt gleich. | The bus is coming soon.
+die | word | the (feminine, plural) | Die Tür ist offen. | The door is open.
+das | word | the (neuter), that | Das Wetter ist heute schön. | The weather is nice today.
+ein | word | a, an, one | Ich hätte gern ein Glas Wasser. | I would like a glass of water.
+kein | word | no, not a | Ich habe heute keine Zeit. | I have no time today.
+dieser | word | this | Dieser Film ist sehr spannend. | This film is very exciting.
+jeder | word | every, each | Ich gehe jeden Tag zu Fuß. | I walk every day.
+alle | word | all, everyone | Alle haben über den Witz gelacht. | Everyone laughed at the joke.
+viele | word | many | Viele Leute fahren mit dem Rad. | Many people ride a bike.
+wenige | word | few | Nur wenige Gäste sind gekommen. | Only a few guests came. | A2
+einige | word | some, a few | Ich habe noch einige Fragen. | I still have a few questions. | A2
+welcher | word | which | Welcher Zug fährt nach Hamburg? | Which train goes to Hamburg?
+jemand | word | someone, somebody | Hat jemand meinen Schlüssel gesehen? | Has anyone seen my key?
+niemand | word | nobody, no one | Niemand war zu Hause. | Nobody was at home.
+alles | word | everything | Alles ist gut gegangen. | Everything went well.
+nichts | word | nothing | Ich habe heute nichts gegessen. | I have eaten nothing today.
+etwas | word | something, a little | Möchtest du etwas trinken? | Would you like something to drink?
+
+# --- Question words ----------------------------------------------------------
+wer | word | who | Wer ist die Frau dort? | Who is the woman over there?
+was | word | what | Was machst du am Wochenende? | What are you doing at the weekend?
+wo | adverb | where | Wo ist der Bahnhof? | Where is the train station?
+wohin | adverb | where (to) | Wohin fahrt ihr in den Urlaub? | Where are you going on holiday?
+woher | adverb | where from | Woher kommst du? | Where are you from?
+wann | adverb | when | Wann beginnt der Kurs? | When does the course start?
+warum | adverb | why | Warum bist du so spät? | Why are you so late?
+wie | adverb | how, like | Wie geht es dir? | How are you?
+weshalb | adverb | why | Weshalb hast du nicht angerufen? | Why didn't you call? | B1
+
+# --- Conjunctions ------------------------------------------------------------
+und | conjunction | and | Ich trinke Kaffee und esse ein Brötchen. | I drink coffee and eat a roll.
+oder | conjunction | or | Möchtest du Tee oder Kaffee? | Would you like tea or coffee?
+aber | conjunction | but | Das Hotel ist klein, aber sehr gemütlich. | The hotel is small but very cosy.
+denn | conjunction | because, for | Ich bleibe zu Hause, denn ich bin krank. | I am staying at home because I am ill.
+sondern | conjunction | but (rather) | Er kommt nicht heute, sondern morgen. | He is not coming today but tomorrow.
+doch | adverb | but, yes (contradicting), after all | Komm doch mit! | Do come along!
+dass | conjunction | that | Ich glaube, dass er recht hat. | I think that he is right.
+weil | conjunction | because | Ich lerne Deutsch, weil ich in Wien arbeite. | I am learning German because I work in Vienna.
+wenn | conjunction | if, when, whenever | Wenn es regnet, nehme ich den Bus. | When it rains, I take the bus.
+als | conjunction | when (past), as, than | Als ich jung war, wohnte ich in Graz. | When I was young, I lived in Graz.
+ob | conjunction | whether, if | Weißt du, ob der Laden offen ist? | Do you know if the shop is open?
+obwohl | conjunction | although | Obwohl es kalt ist, gehen wir spazieren. | Although it is cold, we are going for a walk. | A2
+damit | conjunction | so that, with it | Ich spare Geld, damit ich reisen kann. | I am saving money so that I can travel. | A2
+bevor | conjunction | before | Wasch dir die Hände, bevor du isst. | Wash your hands before you eat. | A2
+nachdem | conjunction | after | Nachdem wir gegessen hatten, gingen wir spazieren. | After we had eaten, we went for a walk. | A2
+während | conjunction | while, during | Während des Films hat er geschlafen. | He slept during the film. | A2
+seit | preposition | since, for | Ich wohne seit drei Jahren hier. | I have lived here for three years.
+bis | preposition | until, by | Der Laden ist bis acht Uhr geöffnet. | The shop is open until eight o'clock.
+sobald | conjunction | as soon as | Ich rufe dich an, sobald ich ankomme. | I will call you as soon as I arrive. | A2
+falls | conjunction | in case, if | Nimm einen Schirm mit, falls es regnet. | Take an umbrella in case it rains. | A2
+da | conjunction | there, since, as | Da ich keine Zeit hatte, bin ich nicht gekommen. | Since I had no time, I didn't come.
+entweder | conjunction | either | Wir fahren entweder mit dem Zug oder mit dem Auto. | We will go either by train or by car. | A2
+indem | conjunction | by (doing) | Man lernt eine Sprache, indem man viel spricht. | You learn a language by speaking a lot. | B1
+soweit | conjunction | as far as | Soweit ich weiß, ist er im Urlaub. | As far as I know, he is on holiday. | B1
+
+# --- Prepositions ------------------------------------------------------------
+in | preposition | in, into | Wir wohnen in einer kleinen Wohnung. | We live in a small flat.
+an | preposition | at, on, to | Das Bild hängt an der Wand. | The picture is hanging on the wall.
+auf | preposition | on, onto | Das Buch liegt auf dem Tisch. | The book is on the table.
+aus | preposition | from, out of | Sie kommt aus Spanien. | She comes from Spain.
+bei | preposition | at, near, with | Ich wohne noch bei meinen Eltern. | I still live with my parents.
+mit | preposition | with, by | Ich fahre mit dem Bus zur Arbeit. | I go to work by bus.
+nach | preposition | to, after | Nach dem Essen trinken wir Kaffee. | After the meal we drink coffee.
+von | preposition | from, of, by | Das ist ein Geschenk von meiner Oma. | This is a present from my grandma.
+zu | preposition | to, too | Ich gehe heute zum Arzt. | I am going to the doctor today.
+vor | preposition | in front of, before, ago | Wir treffen uns vor dem Kino. | We are meeting in front of the cinema.
+hinter | preposition | behind | Der Garten liegt hinter dem Haus. | The garden is behind the house.
+über | preposition | over, above, about | Wir sprechen über das Wetter. | We are talking about the weather.
+unter | preposition | under, below, among | Die Katze schläft unter dem Bett. | The cat is sleeping under the bed.
+neben | preposition | next to, beside | Die Bäckerei ist neben der Post. | The bakery is next to the post office.
+zwischen | preposition | between | Das Café liegt zwischen Bank und Kirche. | The café is between the bank and the church.
+durch | preposition | through | Wir gehen durch den Park. | We are walking through the park.
+für | preposition | for | Die Blumen sind für dich. | The flowers are for you.
+gegen | preposition | against, around (time) | Ich bin gegen den Plan. | I am against the plan.
+ohne | preposition | without | Ich trinke Kaffee ohne Zucker. | I drink coffee without sugar.
+um | preposition | at (time), around | Der Film beginnt um acht Uhr. | The film starts at eight o'clock.
+wegen | preposition | because of | Wegen des Regens bleiben wir zu Hause. | Because of the rain we are staying at home. | A2
+trotz | preposition | despite, in spite of | Trotz der Kälte gehen wir schwimmen. | Despite the cold we are going swimming. | A2
+statt | preposition | instead of | Ich trinke Tee statt Kaffee. | I drink tea instead of coffee. | A2
+ab | preposition | from (on) | Ab Montag arbeite ich wieder. | From Monday I am working again.
+außer | preposition | except, apart from | Außer mir war niemand da. | Apart from me, nobody was there. | A2
+gegenüber | preposition | opposite | Die Apotheke ist gegenüber dem Bahnhof. | The pharmacy is opposite the station. | A2
+entlang | preposition | along | Wir gehen den Fluss entlang. | We are walking along the river. | A2
+innerhalb | preposition | within, inside | Bitte antworten Sie innerhalb einer Woche. | Please reply within a week. | B1
+außerhalb | preposition | outside | Wir wohnen außerhalb der Stadt. | We live outside the city. | A2
+
+# --- Adverbs & particles -----------------------------------------------------
+ja | word | yes | Ja, das stimmt. | Yes, that's right.
+nein | word | no | Nein, danke, ich bin satt. | No thanks, I'm full.
+nicht | adverb | not | Ich verstehe das nicht. | I don't understand that.
+hier | adverb | here | Hier ist meine Telefonnummer. | Here is my phone number.
+dort | adverb | there | Dort drüben ist der Ausgang. | The exit is over there.
+jetzt | adverb | now | Ich habe jetzt keine Zeit. | I don't have time now.
+heute | adverb | today | Heute ist das Wetter schön. | The weather is nice today.
+gestern | adverb | yesterday | Gestern war ich im Kino. | Yesterday I was at the cinema.
+morgen | adverb | tomorrow | Morgen habe ich frei. | I have the day off tomorrow.
+bald | adverb | soon | Wir sehen uns bald! | See you soon!
+oft | adverb | often | Ich gehe oft ins Fitnessstudio. | I often go to the gym.
+immer | adverb | always | Er kommt immer zu spät. | He is always late.
+nie | adverb | never | Ich war noch nie in Paris. | I have never been to Paris.
+manchmal | adverb | sometimes | Manchmal koche ich für meine Freunde. | Sometimes I cook for my friends.
+selten | adverb | rarely, seldom | Wir gehen selten ins Theater. | We rarely go to the theatre. | A2
+schon | adverb | already | Hast du schon gegessen? | Have you already eaten?
+noch | adverb | still, yet, more | Ich habe noch eine Frage. | I have one more question.
+erst | adverb | only, not until, first | Der Zug kommt erst um zehn Uhr. | The train doesn't come until ten o'clock.
+mal | adverb | times, just (particle) | Schau mal, das ist mein Hund! | Look, that's my dog!
+dann | adverb | then | Zuerst essen wir, dann gehen wir spazieren. | First we eat, then we go for a walk.
+also | adverb | so, therefore | Es regnet, also nehmen wir den Bus. | It's raining, so we'll take the bus.
+gern | adverb | gladly, like to | Ich spiele gern Fußball. | I like playing football.
+sehr | adverb | very, very much | Das Essen schmeckt sehr gut. | The food tastes very good.
+ganz | adverb | quite, completely, whole | Das ist ganz einfach. | That is quite simple.
+auch | adverb | also, too | Ich komme auch mit. | I'm coming too.
+nur | adverb | only, just | Ich habe nur fünf Euro dabei. | I only have five euros on me.
+sogar | adverb | even | Er spricht sogar Japanisch. | He even speaks Japanese. | A2
+fast | adverb | almost, nearly | Ich bin fast fertig. | I am almost finished.
+wieder | adverb | again | Kommst du morgen wieder? | Are you coming again tomorrow?
+vielleicht | adverb | maybe, perhaps | Vielleicht regnet es morgen. | Maybe it will rain tomorrow.
+eben | adverb | just, simply | Ich bin eben erst angekommen. | I have only just arrived. | A2
+halt | adverb | just, simply (particle) | Das ist halt so. | That's just the way it is. | B1
+wohl | adverb | probably, well | Er ist wohl krank. | He is probably ill. | A2
+etwa | adverb | about, approximately | Die Fahrt dauert etwa zwei Stunden. | The journey takes about two hours. | A2
+so | adverb | so, like this, such | Das Wetter ist heute so schön! | The weather is so nice today!
+wirklich | adverb | really | Das Konzert war wirklich toll. | The concert was really great.
+genau | adjective | exact, exactly | Du hast genau recht. | You are exactly right.
+einfach | adjective | simple, easy, simply | Die Aufgabe ist ganz einfach. | The task is quite easy.
+gerade | adverb | just, right now; straight | Ich koche gerade das Abendessen. | I am cooking dinner right now.
+richtig | adjective | right, correct | Deine Antwort ist richtig. | Your answer is correct.
+sicher | adjective | safe, sure, certainly | Bist du sicher? | Are you sure?
+klar | adjective | clear, of course | Klar, ich helfe dir gern. | Of course, I'm happy to help you.
+natürlich | adverb | of course, natural | Natürlich komme ich zu deiner Party. | Of course I'm coming to your party.
+gleich | adverb | right away, same, equal | Ich komme gleich zurück. | I'll be right back.
+lange | adverb | long, for a long time | Wir haben lange gewartet. | We waited for a long time.
+weiter | adverb | further, on | Bitte lesen Sie weiter. | Please read on.
+nun | adverb | now, well | Was machen wir nun? | What do we do now?
+damals | adverb | back then, at that time | Damals gab es noch kein Internet. | Back then there was no internet yet. | A2
+früher | adverb | earlier, in the past | Früher habe ich in München gewohnt. | I used to live in Munich.
+später | adverb | later | Ich rufe dich später an. | I'll call you later.
+sofort | adverb | immediately, right away | Komm bitte sofort nach Hause! | Please come home immediately!
+endlich | adverb | finally, at last | Endlich ist Wochenende! | It's finally the weekend!
+einmal | adverb | once | Ich war einmal in Rom. | I was in Rome once.
+überhaupt | adverb | at all | Ich habe überhaupt keine Lust. | I don't feel like it at all. | A2
+eigentlich | adverb | actually | Eigentlich wollte ich heute schwimmen gehen. | Actually, I wanted to go swimming today. | A2
+trotzdem | adverb | nevertheless, anyway | Es regnet, trotzdem gehen wir raus. | It's raining, but we're going out anyway. | A2
+bestimmt | adverb | certainly, definitely | Er kommt bestimmt gleich. | He's definitely coming soon.
+wahrscheinlich | adverb | probably | Morgen regnet es wahrscheinlich. | It will probably rain tomorrow.
+leider | adverb | unfortunately | Leider habe ich keine Zeit. | Unfortunately I have no time.
+zusammen | adverb | together | Wir kochen heute zusammen. | We are cooking together today.
+allein | adverb | alone | Sie wohnt allein in einer großen Wohnung. | She lives alone in a big flat.
+draußen | adverb | outside | Die Kinder spielen draußen. | The children are playing outside.
+drinnen | adverb | inside | Bei Regen bleiben wir drinnen. | When it rains we stay inside.
+oben | adverb | above, upstairs | Das Bad ist oben. | The bathroom is upstairs.
+unten | adverb | below, downstairs | Die Küche ist unten. | The kitchen is downstairs.
+vorbei | adverb | over, past | Der Sommer ist schon vorbei. | Summer is already over.
+dabei | adverb | with it, present, at the same time | Hast du deinen Ausweis dabei? | Do you have your ID on you?
+dafür | adverb | for it, in favour | Ich bin dafür. | I am in favour of it. | A2
+dagegen | adverb | against it | Hast du etwas dagegen? | Do you mind? | A2
+davon | adverb | of it, from it | Ich habe genug davon. | I've had enough of it. | A2
+dazu | adverb | in addition, to it | Was trinkst du dazu? | What are you drinking with it? | A2
+daran | adverb | of it, on it | Denk bitte daran! | Please remember it! | A2
+darauf | adverb | on it, to it | Ich freue mich darauf. | I'm looking forward to it. | A2
+irgendwie | adverb | somehow | Irgendwie schaffen wir das. | Somehow we'll manage it. | A2
+irgendwo | adverb | somewhere | Mein Handy muss irgendwo hier sein. | My phone must be somewhere here. | A2
+irgendwann | adverb | sometime, at some point | Irgendwann möchte ich nach Japan reisen. | At some point I'd like to travel to Japan. | A2
+überall | adverb | everywhere | Ich habe überall gesucht. | I have looked everywhere.
+unterwegs | adverb | on the way, out and about | Ich bin gerade unterwegs. | I'm on my way right now. | A2
+hoffentlich | adverb | hopefully | Hoffentlich scheint morgen die Sonne. | Hopefully the sun will shine tomorrow.
+besonders | adverb | especially, particularly | Das Essen war besonders lecker. | The food was especially tasty.
+ziemlich | adverb | quite, rather | Es ist ziemlich kalt heute. | It's quite cold today. | A2
+kaum | adverb | hardly, barely | Ich habe kaum geschlafen. | I hardly slept. | A2
+eher | adverb | rather, sooner | Ich trinke eher Tee als Kaffee. | I'd rather drink tea than coffee. | A2
+genauso | adverb | just as, exactly the same | Ich sehe das genauso. | I see it exactly the same way. | A2
+miteinander | adverb | with each other | Wir reden oft miteinander. | We often talk to each other. | A2
+drüben | adverb | over there | Da drüben ist ein Café. | There is a café over there. | A2
+jedenfalls | adverb | anyway, in any case | Ich komme jedenfalls morgen. | I'm coming tomorrow in any case. | B1
+allerdings | adverb | however, though | Das Hotel ist schön, allerdings teuer. | The hotel is nice, though expensive. | B1
+unbedingt | adverb | absolutely, definitely | Du musst diesen Film unbedingt sehen. | You absolutely must see this film. | A2
+egal | adjective | doesn't matter, all the same | Das ist mir egal. | I don't care. | A2
+völlig | adverb | completely | Ich bin völlig erschöpft. | I am completely exhausted. | A2
+heraus | adverb | out | Komm heraus, die Sonne scheint! | Come out, the sun is shining! | A2
+herein | adverb | in (towards the speaker) | Herein, bitte! | Come in, please! | A2
+herum | adverb | around | Wir sind um den See herum gelaufen. | We walked around the lake. | A2
+namens | adverb | called, by the name of | Ich habe einen Hund namens Max. | I have a dog called Max. | B1
+übrig | adjective | left over, remaining | Ist noch Kuchen übrig? | Is there any cake left? | A2
+weit | adjective | far, wide | Ist der Bahnhof weit von hier? | Is the station far from here?
+
+# --- Numbers -----------------------------------------------------------------
+eins | word | one | Eins, zwei, drei – los! | One, two, three – go!
+zwei | word | two | Ich habe zwei Schwestern. | I have two sisters.
+drei | word | three | Der Kurs dauert drei Wochen. | The course lasts three weeks.
+vier | word | four | Wir sind vier Personen. | There are four of us.
+fünf | word | five | Das kostet fünf Euro. | That costs five euros.
+sechs | word | six | Ich stehe um sechs Uhr auf. | I get up at six o'clock.
+sieben | word | seven | Die Woche hat sieben Tage. | The week has seven days.
+acht | word | eight | Die Schule beginnt um acht. | School starts at eight.
+neun | word | nine | Mein Sohn ist neun Jahre alt. | My son is nine years old.
+zehn | word | ten | Der Bus kommt in zehn Minuten. | The bus is coming in ten minutes.
+elf | word | eleven | Eine Fußballmannschaft hat elf Spieler. | A football team has eleven players.
+zwölf | word | twelve | Wir essen um zwölf Uhr zu Mittag. | We have lunch at twelve o'clock.
+zwanzig | word | twenty | Sie ist zwanzig Jahre alt. | She is twenty years old.
+hundert | word | hundred | Das Hotel hat hundert Zimmer. | The hotel has a hundred rooms.
+tausend | word | thousand | Die Stadt hat zwanzigtausend Einwohner. | The town has twenty thousand inhabitants.
+erste | adjective | first | Das ist mein erster Tag hier. | This is my first day here.
+zweite | adjective | second | Wir wohnen im zweiten Stock. | We live on the second floor.
+dritte | adjective | third | Nehmen Sie die dritte Straße links. | Take the third street on the left.
+
+# --- Core verbs --------------------------------------------------------------
+haben | verb | to have | Wir haben zwei Kinder. | We have two children.
+werden | verb | to become, will | Es wird langsam dunkel. | It is slowly getting dark.
+können | verb | can, to be able to | Kannst du schwimmen? | Can you swim?
+müssen | verb | must, to have to | Ich muss morgen früh aufstehen. | I have to get up early tomorrow.
+sollen | verb | should, to be supposed to | Du sollst mehr Wasser trinken. | You should drink more water.
+wollen | verb | to want | Ich will ein neues Fahrrad kaufen. | I want to buy a new bike.
+dürfen | verb | may, to be allowed to | Darf ich hier parken? | May I park here?
+mögen | verb | to like | Ich mag keine Tomaten. | I don't like tomatoes.
+möchten | verb | would like | Ich möchte einen Kaffee, bitte. | I would like a coffee, please.
+geben | verb | to give | Kannst du mir bitte das Salz geben? | Can you give me the salt, please?
+gehen | verb | to go, to walk | Ich gehe jeden Morgen zur Arbeit. | I walk to work every morning.
+kommen | verb | to come | Woher kommen Sie? | Where do you come from?
+essen | verb | to eat | Wir essen heute Abend Pizza. | We are eating pizza tonight.
+trinken | verb | to drink | Ich trinke morgens immer Kaffee. | I always drink coffee in the morning.
+stehen | verb | to stand | Der Bus steht schon an der Haltestelle. | The bus is already at the stop.
+sterben | verb | to die | Die Pflanze ist leider gestorben. | Unfortunately the plant has died. | A2
+arbeiten | verb | to work | Meine Mutter arbeitet im Krankenhaus. | My mother works at the hospital.
+zeigen | verb | to show | Kannst du mir den Weg zeigen? | Can you show me the way?
+sitzen | verb | to sit | Wir sitzen im Garten. | We are sitting in the garden.
+schreiben | verb | to write | Ich schreibe meiner Oma einen Brief. | I am writing my grandma a letter.
+lesen | verb | to read | Am Abend lese ich gern ein Buch. | In the evening I like to read a book.
+fliegen | verb | to fly | Wir fliegen im Sommer nach Spanien. | We are flying to Spain in the summer.
+fallen | verb | to fall | Das Glas ist auf den Boden gefallen. | The glass fell on the floor.
+liegen | verb | to lie, to be located | Das Handy liegt auf dem Tisch. | The phone is lying on the table.
+legen | verb | to put, to lay | Leg den Schlüssel bitte auf den Tisch. | Please put the key on the table.
+laufen | verb | to run, to walk | Die Kinder laufen in den Garten. | The children run into the garden.
+schlagen | verb | to hit, to beat | Unsere Mannschaft hat Bayern geschlagen. | Our team beat Bayern. | A2
+singen | verb | to sing | Sie singt in einem Chor. | She sings in a choir.
+lügen | verb | to lie (tell a lie) | Er lügt nie. | He never lies. | A2
+kämpfen | verb | to fight | Die Feuerwehr kämpft gegen das Feuer. | The fire brigade is fighting the fire. | A2
+sprechen | verb | to speak | Sprechen Sie Englisch? | Do you speak English?
+halten | verb | to hold, to stop | Der Zug hält in Salzburg. | The train stops in Salzburg.
+warten | verb | to wait | Ich warte auf den Bus. | I am waiting for the bus.
+fahren | verb | to drive, to go (by vehicle) | Wir fahren mit dem Zug nach Wien. | We are going to Vienna by train.
+treffen | verb | to meet | Ich treffe meine Freunde im Café. | I am meeting my friends at the café.
+lernen | verb | to learn, to study | Ich lerne seit einem Jahr Deutsch. | I have been learning German for a year.
+setzen | verb | to put, to sit down | Setz dich bitte! | Please sit down!
+ziehen | verb | to pull, to move | Wir ziehen nächsten Monat nach Köln. | We are moving to Cologne next month. | A2
+rufen | verb | to call, to shout | Ruf bitte ein Taxi! | Please call a taxi!
+anrufen | verb | to call (phone) | Ich rufe dich heute Abend an. | I will call you tonight.
+vertrauen | verb | to trust | Ich vertraue meiner Schwester. | I trust my sister. | A2
+passieren | verb | to happen | Was ist passiert? | What happened?
+erwarten | verb | to expect | Wir erwarten Gäste zum Abendessen. | We are expecting guests for dinner. | A2
+erreichen | verb | to reach | Ich habe den Zug gerade noch erreicht. | I just caught the train. | A2
+wohnen | verb | to live, to reside | Wo wohnst du? | Where do you live?
+bitten | verb | to ask, to request | Ich bitte dich um Hilfe. | I'm asking you for help. | A2
+schlafen | verb | to sleep | Das Baby schläft schon. | The baby is already asleep.
+verstecken | verb | to hide | Die Kinder verstecken die Ostereier. | The children are hiding the Easter eggs. | A2
+besuchen | verb | to visit | Am Sonntag besuchen wir meine Eltern. | On Sunday we are visiting my parents.
+passen | verb | to fit, to suit | Die Hose passt mir nicht. | The trousers don't fit me.
+feiern | verb | to celebrate | Wir feiern heute meinen Geburtstag. | We are celebrating my birthday today.
+erkennen | verb | to recognise | Ich habe dich fast nicht erkannt. | I almost didn't recognise you. | A2
+erledigen | verb | to take care of, to get done | Ich muss noch ein paar Sachen erledigen. | I still have to get a few things done. | A2
+zerstören | verb | to destroy | Der Sturm hat viele Häuser zerstört. | The storm destroyed many houses. | A2
+tagen | verb | to meet, to be in session | Der Rat tagt jeden Montag. | The council meets every Monday. | B1
+wiedersehen | verb | to see again | Ich hoffe, wir sehen uns bald wieder. | I hope we'll see each other again soon. | A2
+
+# --- Frequent adjectives with wrong senses -----------------------------------
+gut | adjective | good, well | Das Essen ist sehr gut. | The food is very good.
+schön | adjective | beautiful, nice | Wir hatten einen schönen Urlaub. | We had a lovely holiday.
+fertig | adjective | ready, finished | Das Essen ist fertig! | Dinner is ready!
+später | adverb | later | Ich rufe dich später an. | I'll call you later.
+toll | adjective | great, terrific | Die Party war toll! | The party was great!
+nett | adjective | nice, kind | Deine Nachbarn sind sehr nett. | Your neighbours are very nice.
+ruhig | adjective | quiet, calm | Die Straße ist sehr ruhig. | The street is very quiet.
+verrückt | adjective | crazy | Das ist ja verrückt! | That's crazy!
+verloren | adjective | lost | Ich habe meinen Schlüssel verloren. | I have lost my key.
+wichtig | adjective | important | Diese Prüfung ist sehr wichtig. | This exam is very important.
+ehrlich | adjective | honest | Sei bitte ehrlich zu mir. | Please be honest with me.
+glücklich | adjective | happy | Sie sieht sehr glücklich aus. | She looks very happy.
+früh | adjective | early | Ich stehe jeden Tag früh auf. | I get up early every day.
+willkommen | adjective | welcome | Herzlich willkommen in Berlin! | Welcome to Berlin!
+voll | adjective | full | Der Zug ist heute sehr voll. | The train is very full today.
+langsam | adjective | slow, slowly | Bitte sprechen Sie langsam. | Please speak slowly.
+froh | adjective | glad, happy | Ich bin froh, dass du da bist. | I'm glad you're here.
+leicht | adjective | easy, light | Die Prüfung war leicht. | The exam was easy.
+böse | adjective | angry, bad, evil | Bist du mir böse? | Are you angry with me? | A2
+erfahren | verb | to find out, to learn | Wann erfahren wir das Ergebnis? | When will we find out the result? | A2
+vorsichtig | adjective | careful | Sei vorsichtig, die Straße ist glatt! | Be careful, the road is slippery!
+lustig | adjective | funny | Der Film war sehr lustig. | The film was very funny.
+komisch | adjective | strange, funny | Das Essen riecht komisch. | The food smells strange. | A2
+dumm | adjective | stupid | Das war eine dumme Idee. | That was a stupid idea. | A2
+verheiratet | adjective | married | Meine Schwester ist verheiratet. | My sister is married.
+wach | adjective | awake | Bist du schon wach? | Are you awake yet?
+arm | adjective | poor | Die Familie war sehr arm. | The family was very poor.
+heiß | adjective | hot | Heute ist es sehr heiß. | It is very hot today.
+kalt | adjective | cold | Im Winter ist es hier sehr kalt. | It is very cold here in winter.
+reich | adjective | rich | Er ist durch sein Start-up reich geworden. | He got rich through his start-up. | A2
+traurig | adjective | sad | Warum bist du so traurig? | Why are you so sad?
+beschäftigt | adjective | busy | Ich bin heute sehr beschäftigt. | I am very busy today. | A2
+sauber | adjective | clean | Die Küche ist wieder sauber. | The kitchen is clean again.
+nervös | adjective | nervous | Vor der Prüfung bin ich immer nervös. | I'm always nervous before an exam. | A2
+gefährlich | adjective | dangerous | Der Fluss ist hier gefährlich. | The river is dangerous here. | A2
+schrecklich | adjective | terrible, awful | Das Wetter war schrecklich. | The weather was terrible. | A2
+schlecht | adjective | bad | Mir ist schlecht. | I feel sick.
+ernst | adjective | serious | Das ist ein ernstes Problem. | That is a serious problem. | A2
+hoch | adjective | high, tall | Der Berg ist sehr hoch. | The mountain is very high.
+fest | adjective | firm, fixed | Wir haben einen festen Termin. | We have a fixed appointment. | A2
+anders | adverb | different, differently | Ich sehe das anders. | I see that differently. | A2
+direkt | adjective | direct, directly | Der Zug fährt direkt nach Berlin. | The train goes directly to Berlin. | A2
+perfekt | adjective | perfect | Dein Deutsch ist fast perfekt. | Your German is almost perfect. | A2
+unglaublich | adjective | unbelievable, incredible | Die Aussicht ist unglaublich schön. | The view is incredibly beautiful. | A2
+absolut | adverb | absolutely | Das ist absolut richtig. | That is absolutely right. | A2
+kurz | adjective | short | Die Pause ist nur kurz. | The break is only short.
+länger | adjective | longer | Der Film dauert länger als gedacht. | The film lasts longer than expected. | A2
+hinten | adverb | at the back, behind | Der Ausgang ist hinten links. | The exit is at the back on the left. | A2
+entfernt | adjective | away, distant | Das Dorf ist zehn Kilometer entfernt. | The village is ten kilometres away. | A2
+offensichtlich | adjective | obvious | Das ist doch offensichtlich. | That's obvious. | B1
+persönlich | adjective | personal, in person | Ich möchte ihn persönlich kennenlernen. | I would like to meet him in person. | A2
+normal | adjective | normal | Das ist ganz normal. | That's completely normal.
+gelassen | adjective | calm, relaxed | Sie bleibt immer gelassen. | She always stays calm. | B1
+wunderschön | adjective | wonderful, gorgeous | Der Strand ist wunderschön. | The beach is gorgeous. | A2
+sauer | adjective | sour, annoyed | Die Zitrone ist sauer. | The lemon is sour. | A2
+erwischt | adjective | caught | Er wurde beim Lügen erwischt. | He was caught lying. | B1
+gemeinsam | adjective | together, joint | Wir kochen gemeinsam. | We cook together. | A2
+gefallen | verb | to please, to like | Die Stadt gefällt mir sehr. | I like the city a lot.
+weiß | adjective | white | Sie trägt ein weißes Kleid. | She is wearing a white dress.
+viel | adjective | much, a lot | Ich habe heute viel zu tun. | I have a lot to do today.
+andere | adjective | other, different | Hast du eine andere Idee? | Do you have another idea?
+schnell | adjective | fast, quick | Der Zug ist sehr schnell. | The train is very fast.
+bar | adjective | (in) cash | Kann ich bar bezahlen? | Can I pay in cash? | A2
+interessiert | adjective | interested | Ich bin an Kunst sehr interessiert. | I am very interested in art. | A2
+gestorben | adjective | dead, died | Sein Großvater ist letztes Jahr gestorben. | His grandfather died last year. | A2
+
+# --- Common nouns with wrong senses ------------------------------------------
+die Würde | noun | dignity | Jeder Mensch hat eine Würde. | Every person has dignity. | B1
+der Ernst | noun | seriousness | Ist das dein Ernst? | Are you serious? | A2
+das Durcheinander | noun | mess, chaos | Was für ein Durcheinander! | What a mess! | B1
+die Warte | noun | observatory, vantage point | Von dieser Warte aus sieht man die ganze Stadt. | From this vantage point you can see the whole city. | B1
+das Wasser | noun | water | Ein Glas Wasser, bitte. | A glass of water, please.
+die Stelle | noun | place, spot, job | An deiner Stelle würde ich das nicht tun. | If I were you, I wouldn't do that.
+der Ort | noun | place, village | Das ist ein schöner Ort für ein Picknick. | That's a nice place for a picnic.
+die Straße | noun | street, road | Wir wohnen in einer ruhigen Straße. | We live on a quiet street.
+der Herr | noun | gentleman, Mr | Guten Tag, Herr Müller! | Good afternoon, Mr Müller!
+das Moment | noun | factor, element | Das ist ein wichtiges Moment. | That is an important factor. | B1
+der Moment | noun | moment | Einen Moment, bitte! | One moment, please!
+der Typ | noun | guy, type | Er ist ein netter Typ. | He's a nice guy.
+das Alter | noun | age | In deinem Alter habe ich auch viel gelesen. | At your age I read a lot too.
+das Geschäft | noun | shop, business | Das Geschäft schließt um acht Uhr. | The shop closes at eight o'clock.
+der Halt | noun | stop, hold | Nächster Halt: Hauptbahnhof. | Next stop: main station. | A2
+der Fall | noun | case, fall | In diesem Fall rufe ich dich an. | In that case I'll call you.
+die Mache | noun | sham, put-on | Das ist doch alles nur Mache. | That's all just for show. | B1
+das Ziel | noun | goal, destination | Unser Ziel ist der Gipfel. | Our destination is the summit.
+das Vergessen | noun | forgetting, oblivion | Gegen das Vergessen hilft eine Liste. | A list helps against forgetting. | B1
+das Gute | noun | the good (thing) | Das Gute daran ist, dass es billig ist. | The good thing about it is that it's cheap. | A2
+der Gute | noun | good man, good one | Er ist einer von den Guten. | He's one of the good guys. | B1
+der Laden | noun | shop, store | Der Laden an der Ecke hat lange geöffnet. | The shop on the corner is open late.
+der Schaden | noun | damage | Der Sturm hat großen Schaden angerichtet. | The storm caused great damage. | A2
+das Wiedersehen | noun | reunion | Auf Wiedersehen! | Goodbye!
+das Mal | noun | time (occasion) | Das war das erste Mal, dass ich geflogen bin. | That was the first time I flew.
+
+# --- Greetings & polite words ------------------------------------------------
+bitte | word | please, you're welcome | Ein Brötchen, bitte. | A roll, please.
+danke | word | thank you, thanks | Danke für deine Hilfe! | Thanks for your help!
+hallo | word | hello, hi | Hallo, wie geht's? | Hi, how are you?
+tschüss | word | bye | Tschüss, bis morgen! | Bye, see you tomorrow!
+
+# --- Removals (nominalised function words; the function word is listed instead) ---
+- das Mehr
+- das Nichts
+- das Etwas
+- das Ja
+- das Nein
+- das Aber

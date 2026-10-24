@@ -27,6 +27,8 @@ A local-first, premium, CEFR-aligned (A1-B2) German learning application featuri
 - **Verify Local Engine:** `curl http://localhost:11434/api/tags`
 - **Database Status Check:** `mongosh --eval "db.adminCommand('ping')"`
 - **Health Check:** `curl http://localhost:5001/api/health`
+- **Vocab Bank Audit / Repair:** `npm run audit-bank` / `python3 scripts/repair_vocab_bank.py` (edits `src/data/vocabBank15k.json`; curated overrides in `scripts/vocab_bank_curated.tsv`)
+- **Reseed Vocab Bank:** `npm run reseed-bank` (the server also reseeds automatically when the data file's hash changes)
 
 ## Technology Constraints & Strict Conventions
 - **Module Format:** ES Modules strictly (`import/export`). No CommonJS `require()`.
