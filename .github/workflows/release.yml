@@ -1,0 +1,103 @@
+name: Release
+
+# Tag push (v1.2.0, v1.3.0-rc.1, …) → build every platform and publish a GitHub Release.
+# Manual run or a PR touching the packaging → build every platform, artifacts on the run only.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+  pull_request:
+    branches: [master]
+    paths:
+      - scripts/build-binary.mjs
+      - .github/workflows/release.yml
+      - package.json
+      - package-lock.json
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-14,         target: macos-arm64,   archive: tar.gz }  # Apple Silicon
+          - { os: macos-15-intel,   target: macos-x64,     archive: tar.gz }  # Intel Macs
+          - { os: windows-latest,   target: windows-x64,   archive: zip }
+          - { os: windows-11-arm,   target: windows-arm64, archive: zip }
+          - { os: ubuntu-latest,    target: linux-x64,     archive: tar.gz }
+          - { os: ubuntu-24.04-arm, target: linux-arm64,   archive: tar.gz }  # Raspberry Pi 4/5, ARM servers
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:binary
+
+      - name: Smoke test (no MongoDB → must load every module, then exit on the DB error)
+        run: |
+          set +e
+          exe=dist/omnilang-${{ matrix.target }}/omnilang
+          [ -f "$exe.exe" ] && exe="$exe.exe"
+          MONGO_URI='mongodb://127.0.0.1:1/x?serverSelectionTimeoutMS=2000' "$exe" > smoke.log 2>&1 &
+          pid=$!
+          for i in $(seq 1 30); do grep -q 'MongoDB connection failed' smoke.log && break; sleep 1; done
+          kill $pid 2>/dev/null
+          cat smoke.log
+          grep -q 'MongoDB connection failed' smoke.log
+
+      - name: Smoke test with MongoDB (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          docker run -d --rm -p 27017:27017 mongo:7
+          MONGO_URI=mongodb://127.0.0.1:27017/omnilang_smoke dist/omnilang-${{ matrix.target }}/omnilang > server.log 2>&1 &
+          ok=0
+          for i in $(seq 1 90); do curl -sf localhost:5001/api/health && { ok=1; break; }; sleep 1; done
+          cat server.log
+          [ $ok = 1 ]
+          curl -sf localhost:5001/ | grep -qi '<html'
+          curl -sf -o /dev/null localhost:5001/dashboard.html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omnilang-${{ matrix.target }}
+          path: dist/omnilang-${{ matrix.target }}.${{ matrix.archive }}
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          (cd dist && sha256sum omnilang-* > SHA256SUMS.txt)
+          flags=()
+          [[ "$TAG" == *-* ]] && flags+=(--prerelease)   # v1.3.0-rc.1 → pre-release
+          gh release create "$TAG" dist/* \
+            --title "OmniLang $TAG" \
+            --notes-file .github/release-notes.md \
+            --generate-notes \
+            "${flags[@]}"

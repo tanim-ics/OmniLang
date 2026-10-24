@@ -33,4 +33,5 @@ Thumbs.db
 scratch/
 tmp/
 dist/
+build/
 coverage/

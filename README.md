@@ -34,6 +34,10 @@ In both modes **Ollama runs natively** so the model uses the Apple GPU (Metal); 
 
 **Hardware:** mistral-nemo 12B (Q4) uses about 7.5 GB of unified memory, so 16 GB+ is comfortable. On an M5 with 24 GB, chat replies take about 3–4 s, stories about 15–20 s, and essay grading about 20–30 s.
 
+### Prebuilt download (no Node, no git)
+
+Every tagged version is built in the cloud by GitHub Actions for macOS (Apple Silicon and Intel), Windows (x64 and ARM) and Linux (x64 and ARM). Grab the archive for your machine from [Releases](https://github.com/tanim-ics/OmniLang/releases/latest), unpack it and run `omnilang`. MongoDB and Ollama still run separately; the release notes show how. Cutting a release is described in [RELEASING.md](RELEASING.md).
+
 ### Linux
 
 `./setup.sh` (legacy one-step setup) or `./start.sh`.
@@ -108,7 +112,8 @@ If you prefer manual control:
 | `npm run dev` | Boots OmniLang in development mode with nodemon hot-reloading |
 | `npm run admin -- list` | Lists all user accounts with status, XP, level, model |
 | `npm run admin -- delete <user>` | Permanently deletes a user and cascades vocab & chat history |
-| `npm test` | Runs the automated auth, reset password & admin test suite |
+| `npm test` | Runs the automated auth, reset password & admin test suite (needs the server running on :5001) |
+| `npm run build:binary` | Builds a single-file executable for the current OS into `dist/` (see RELEASING.md) |
 | `npm run docker:check` | Validates host Ollama installation & confirms at least one model is pulled |
 | `npm run docker:up` | Runs pre-flight validation, then boots MongoDB and OmniLang in Docker |
 | `npm run docker:down` | Stops all Docker containers |
