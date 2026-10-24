@@ -28,6 +28,7 @@ A local-first, premium, CEFR-aligned (A1-B2) German learning application featuri
 - **Database Status Check:** `mongosh --eval "db.adminCommand('ping')"`
 - **Health Check:** `curl http://localhost:5001/api/health`
 - **Vocab Bank Audit / Repair:** `npm run audit-bank` / `python3 scripts/repair_vocab_bank.py` (edits `src/data/vocabBank15k.json`; curated overrides in `scripts/vocab_bank_curated.tsv`)
+- **Vocab Bank Rebuild (CEFR levels + meanings):** `.cache/vocab-bank/venv/bin/python scripts/goethe_wordlists.py` then `python3 scripts/rebuild_vocab_bank.py --check` then `python3 scripts/legacy_glosses.py`. Levels A1–B1 come from the Goethe-Institut word lists (PDFs cached in `.cache/`, never committed), everything else is `B2` ("B2+"); meanings come from Wiktionary (kaikki.org); the hand review of the A1–B1 core lives in `scripts/vocab_bank_review.tsv`.
 - **Reseed Vocab Bank:** `npm run reseed-bank` (the server also reseeds automatically when the data file's hash changes)
 
 ## Technology Constraints & Strict Conventions
@@ -36,6 +37,7 @@ A local-first, premium, CEFR-aligned (A1-B2) German learning application featuri
 - **Database Validation Rules:**
   - `User.currentLevel`: Enforce strict enum validations: `['A1', 'A2', 'B1', 'B2']`.
   - `Conversation.messages`: Objects must track `sender` directly matching `['user', 'ai']`.
+  - `VocabBank.level`: `['A1', 'A2', 'B1', 'B2']`: A1–B1 per the Goethe-Institut word lists, `B2` = everything beyond them ("B2+").
   - `Vocabulary.srsStage`: Tracks Leitner progression index layers integer scale `1` through `5`.
 
 ## Local Ollama Integration Protocol

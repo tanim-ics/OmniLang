@@ -348,7 +348,7 @@
                         <i class="fa-solid fa-layer-group"></i> 20-Card Deck
                     </button>
                     <button class="btn-filter btn-sm" id="viewVocabBankBtn" style="border:none;border-radius:var(--radius-full);padding:3px 12px;font-size:0.75rem;">
-                        <i class="fa-solid fa-book-bookmark"></i> 15k Word Bank
+                        <i class="fa-solid fa-book-bookmark"></i> Word Bank
                     </button>
                 </div>
                 <input type="text" id="customVocabTopicInput" class="select-control-input" placeholder="Topic..." style="width:130px;padding:0.35rem 0.65rem;font-size:0.75rem;">
@@ -426,19 +426,20 @@
                 </div>
             </div>
 
-            <!-- VIEW 2: 15,000-WORD VOCABULARY BANK EXPLORER -->
+            <!-- VIEW 2: VOCABULARY BANK EXPLORER -->
             <div class="bank-explorer-container" id="vocabBankExplorerView" style="display:none;">
                 <div class="bank-search-bar">
                     <div style="position:relative;flex:1;min-width:260px;">
                         <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--text-muted);"></i>
-                        <input type="text" id="bankSearchInput" class="select-control-input" placeholder="Search 15,000 German words, articles, or English meanings..." style="padding-left:2.5rem;width:100%;">
+                        <input type="text" id="bankSearchInput" class="select-control-input" placeholder="Search German words, articles, or English meanings..." style="padding-left:2.5rem;width:100%;">
                     </div>
                     <div class="bank-filters-row" style="flex:1;">
                         <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
-                            <button class="btn-filter btn-sm active bank-level-pill" data-lvl="all">All (15,000)</button>
-                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="A1">🟢 A1 (5,000)</button>
-                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="A2">🟡 A2 (5,000)</button>
-                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="B1">🔵 B1 (5,000)</button>
+                            <button class="btn-filter btn-sm active bank-level-pill" data-lvl="all">All <span class="bank-level-count" data-lvl="total"></span></button>
+                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="A1">🟢 A1 <span class="bank-level-count" data-lvl="A1"></span></button>
+                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="A2">🟡 A2 <span class="bank-level-count" data-lvl="A2"></span></button>
+                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="B1">🔵 B1 <span class="bank-level-count" data-lvl="B1"></span></button>
+                            <button class="btn-filter btn-sm bank-level-pill" data-lvl="B2" title="Words beyond the Goethe-Institut B1 list">🟣 B2+ <span class="bank-level-count" data-lvl="B2"></span></button>
                         </div>
                         <select id="bankTopicFilter" class="select-control-input" style="padding:0.35rem 0.65rem;font-size:0.8125rem;max-width:140px;">
                             <option value="All">All Topics</option>
@@ -457,7 +458,7 @@
                 </div>
 
                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;color:var(--text-muted);padding:0 0.25rem;">
-                    <div>Found <span id="bankResultCount" style="font-weight:700;color:var(--accent-cyan);">15,000</span> entries</div>
+                    <div>Found <span id="bankResultCount" style="font-weight:700;color:var(--accent-cyan);">–</span> entries</div>
                     <div id="bankPageIndicator">Page 1 of 300</div>
                 </div>
 

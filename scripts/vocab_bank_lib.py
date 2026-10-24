@@ -369,3 +369,102 @@ def build_sentence_index():
                 for tok in set(t.lower() for t in re.findall(r"[A-Za-zÄÖÜäöüß]+", de)):
                     by_token[tok].append(pair)
     return by_token
+
+
+# ---------------------------------------------------------------------------
+# Wiktionary (kaikki.org extract of English Wiktionary, CC BY-SA)
+# ---------------------------------------------------------------------------
+
+WIKTIONARY_URL = 'https://kaikki.org/dictionary/German/kaikki.org-dictionary-German.jsonl.gz'
+WIKTIONARY_DIR = os.path.join(CACHE_DIR, 'wiktionary')
+WIKT_POS = {'noun': 'noun', 'verb': 'verb', 'adj': 'adjective', 'adv': 'adverb', 'prep': 'preposition',
+            'postp': 'preposition', 'conj': 'conjunction', 'pron': 'word', 'det': 'word', 'article': 'word',
+            'num': 'word', 'intj': 'word', 'particle': 'word', 'phrase': 'phrase', 'prep_phrase': 'phrase'}
+RARE_SENSE_TAGS = {'archaic', 'obsolete', 'dated', 'rare', 'poetic', 'historical', 'regional', 'dialectal',
+                   'Austria', 'Switzerland', 'Swiss', 'Bavaria', 'vulgar', 'slang', 'derogatory', 'literary',
+                   'nonstandard', 'Early-New-High-German', 'Middle-High-German'}
+
+
+def wiktionary_index():
+    """
+    word -> [{'pos', 'gender', 'plural', 'senses': [{'gloss', 'tags'}]}] for real lemmas
+    (entries whose senses are all inflected forms are skipped). Built once and cached.
+    """
+    path = os.path.join(WIKTIONARY_DIR, 'index.json')
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    import gzip
+    os.makedirs(WIKTIONARY_DIR, exist_ok=True)
+    src = os.path.join(WIKTIONARY_DIR, 'kaikki-German.jsonl.gz')
+    if not os.path.exists(src):
+        print(f"Downloading {WIKTIONARY_URL} (~100 MB) ...")
+        req = urllib.request.Request(WIKTIONARY_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=600) as r, open(src, 'wb') as f:
+            while chunk := r.read(1 << 20):
+                f.write(chunk)
+    index = defaultdict(list)
+    with gzip.open(src, 'rt', encoding='utf-8') as f:
+        for line in f:
+            e = json.loads(line)
+            pos = WIKT_POS.get(e.get('pos'))
+            if not pos:
+                continue
+            senses = []
+            for s in e.get('senses', []):
+                if s.get('form_of') or s.get('alt_of') or not s.get('glosses'):
+                    continue
+                tags = s.get('tags') or []
+                if 'form-of' in tags or 'alt-of' in tags or 'abbreviation' in tags:
+                    continue
+                senses.append({'gloss': s['glosses'][0], 'tags': [t for t in tags if t in RARE_SENSE_TAGS]})
+                if len(senses) == 6:
+                    break
+            if not senses:
+                continue
+            gender = None
+            plural = None
+            for h in e.get('head_templates') or []:
+                if h.get('name') == 'de-noun':
+                    g = (h.get('args') or {}).get('1', '')
+                    gender = g.split(',')[0].split('.')[0].split('<')[0][:1] or None
+            for fm in e.get('forms') or []:
+                if 'plural' in (fm.get('tags') or []) and not fm.get('source'):
+                    plural = fm.get('form')
+                    break
+            index[e['word']].append({'pos': pos, 'gender': gender, 'plural': plural, 'senses': senses})
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(index, f, ensure_ascii=False)
+    return index
+
+
+def wiktionary_gloss(sense_gloss, wtype, en_freq=None):
+    """
+    'to give (changing ownership)' -> 'to give'; 'train station, railway station' -> both;
+    'female singer, singeress, songstress' -> 'female singer' (rare English words are dropped).
+    """
+    g = sense_gloss
+    while True:  # nested brackets: "projector (device (onto a screen))"
+        stripped = re.sub(r'\([^()]*\)|\[[^\[\]]*\]', '', g)
+        if stripped == g:
+            break
+        g = stripped
+    g = re.sub(r'[()\[\]]', '', g)
+    items = []
+    for part in re.split(r'[,;]', g.split('.')[0]):
+        part = re.sub(r'\s+', ' ', part).strip(' :')
+        if not part:
+            continue
+        if part.startswith('To '):
+            part = 'to ' + part[3:]
+        if wtype == 'verb' and not part.lower().startswith('to '):
+            part = 'to ' + part
+        if items:
+            # a second variant only when it is short and common English ("railway station", not "singeress")
+            words = re.findall(r"[a-z']+", part.lower().replace('to ', '', 1))
+            if len(words) > 3 or not en_freq or any(en_freq.get(w, 999999) > 15000 for w in words):
+                break
+        items.append(part)
+        if len(items) == 2:
+            break
+    return ', '.join(items)

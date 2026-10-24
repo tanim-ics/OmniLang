@@ -1,0 +1,1055 @@
+# Manual review of the A1-B1 core (Goethe-Institut word lists), applied by scripts/rebuild_vocab_bank.py.
+# Format: word | type | translation [| level]    (gloss correction, keeps the example)
+#     or: word | type | translation | example | exampleEn [| level]
+#     or: - word                                 (remove)
+# Wiktionary supplies the default gloss; lines here correct it where the first Wiktionary
+# sense is not what a learner needs ("der Koffer = a case" -> "suitcase").
+
+# ===== A1 =====================================================================
+die Finnin | noun | female Finn
+die Mexikanerin | noun | female Mexican
+die Architektin | noun | female architect
+die Ingenieurin | noun | female engineer
+die Ärztin | noun | female doctor
+die Lehrerin | noun | female teacher
+die Freundin | noun | girlfriend, female friend
+abgeben | verb | to hand in, to give
+abholen | verb | to pick up, to collect
+anbieten | verb | to offer
+anfangen | verb | to begin, to start
+beginnen | verb | to begin, to start
+anmachen | verb | to turn on
+ausmachen | verb | to turn off
+ankreuzen | verb | to tick, to mark with a cross
+ausfüllen | verb | to fill in, to fill out
+das Ausland | noun | abroad, foreign countries
+die Autobahn | noun | motorway, highway
+der Bahnhof | noun | train station
+bedeuten | verb | to mean
+benutzen | verb | to use
+bezahlen | verb | to pay
+bisschen | word | a bit, a little
+eilig | adjective | urgent, in a hurry
+empfehlen | verb | to recommend
+entschuldigen | verb | to excuse, to apologise
+gewinnen | verb | to win
+glauben | verb | to believe, to think
+heißen | verb | to be called
+ihn | word | him, it
+die Information | noun | information
+der Koffer | noun | suitcase
+lieb | adjective | dear, kind
+machen | verb | to make, to do
+mehr | word | more
+mitbringen | verb | to bring along
+rauchen | verb | to smoke
+der Pass | noun | passport
+die Polizei | noun | police
+schicken | verb | to send
+das Schwimmbad | noun | swimming pool
+sehen | verb | to see
+die Sehenswürdigkeit | noun | sight, tourist attraction
+stellen | verb | to put, to place
+die Wohnung | noun | flat, apartment
+der Zoll | noun | customs
+das Gymnasium | noun | grammar school, secondary school
+denken | verb | to think
+leid | adjective | sorry (es tut mir leid)
+die Jeans | noun | jeans
+lassen | verb | to let, to leave
+schenken | verb | to give (as a present)
+tragen | verb | to carry, to wear
+wünschen | verb | to wish
+das T-Shirt | noun | T-shirt
+die U-Bahn | noun | underground, subway
+der Mann | noun | man, husband
+leben | verb | to live
+die Ordnung | noun | order, tidiness
+hören | verb | to hear, to listen
+bleiben | verb | to stay, to remain
+die Arbeit | noun | work, job
+das Kind | noun | child
+die Uhr | noun | clock, watch, o'clock
+die Ahnung | noun | idea, notion (keine Ahnung = no idea)
+schwer | adjective | heavy, difficult
+die Geschichte | noun | story, history
+das Spiel | noun | game
+das Wort | noun | word
+der Platz | noun | place, seat, square
+falsch | adjective | wrong, false
+der Plan | noun | plan
+der Fehler | noun | mistake, error
+das Stück | noun | piece
+die Nachricht | noun | message, news
+der Schlüssel | noun | key
+die Klasse | noun | class
+der Tisch | noun | table
+das Bild | noun | picture, image
+der Arm | noun | arm
+die Reise | noun | trip, journey
+der Zug | noun | train
+die Tasche | noun | bag, pocket
+die Sekunde | noun | second
+der Anruf | noun | phone call
+die Sonne | noun | sun
+die Lust | noun | desire (Lust haben = to feel like)
+die Achtung | noun | attention, caution
+die Band | noun | band
+das Eis | noun | ice, ice cream
+der Schmerz | noun | pain
+der Ring | noun | ring
+die Insel | noun | island
+das Fleisch | noun | meat
+das Bein | noun | leg
+die Pause | noun | break, pause
+die Katze | noun | cat
+der Kuchen | noun | cake
+der Termin | noun | appointment
+scheinen | verb | to shine, to seem
+dick | adjective | fat, thick
+die Aussage | noun | statement
+teuer | adjective | expensive
+fehlen | verb | to be missing
+die Rechnung | noun | bill, invoice
+die Treppe | noun | stairs, staircase
+der Schrank | noun | cupboard, wardrobe
+die Heimat | noun | home, homeland
+der Osten | noun | east
+pünktlich | adjective | punctual, on time
+üben | verb | to practise
+der Ausweis | noun | ID card
+das Schild | noun | sign
+telefonieren | verb | to make a phone call
+die Anzeige | noun | advertisement, display
+die Führung | noun | guided tour, leadership
+umziehen | verb | to move (house)
+herzlich | adjective | warm, cordial
+das Rad | noun | wheel, bike
+studieren | verb | to study (at university)
+der Aufzug | noun | lift, elevator
+billig | adjective | cheap
+die Bahn | noun | train, railway
+der Kunde | noun | customer
+der Schalter | noun | counter, switch
+das Lokal | noun | pub, restaurant
+der Bogen | noun | sheet (of paper), arch
+der Verkäufer | noun | salesperson, shop assistant
+der Eintritt | noun | admission, entrance
+das Fach | noun | (school) subject, compartment
+die Note | noun | mark, grade
+das Brötchen | noun | bread roll
+günstig | adjective | cheap, favourable
+der Anschluss | noun | connection
+die Auskunft | noun | information (desk)
+die Fahrkarte | noun | ticket
+der Vormittag | noun | morning
+sympathisch | adjective | likeable, nice
+das Hähnchen | noun | chicken
+der Empfänger | noun | recipient
+das Gleis | noun | platform, track
+die Haltestelle | noun | stop (bus, tram)
+die Anmeldung | noun | registration
+die Straßenbahn | noun | tram
+der Kugelschreiber | noun | ballpoint pen
+der Automat | noun | vending machine, machine
+das Formular | noun | form
+das Hobby | noun | hobby
+die Angabe | noun | information, detail
+der Radiergummi | noun | eraser, rubber
+das Bad | noun | bathroom, bath
+das Kleid | noun | dress
+der Gruß | noun | greeting
+die Kasse | noun | checkout, till
+fremd | adjective | foreign, strange
+das Studium | noun | (university) studies
+der Fußball | noun | football, soccer
+das Gemüse | noun | vegetables
+leise | adjective | quiet
+das Glück | noun | luck, happiness
+die Vorsicht | noun | caution, care
+das Haus | noun | house
+die Hochzeit | noun | wedding
+kaputt | adjective | broken
+kennen | verb | to know (be familiar with)
+kochen | verb | to cook
+holen | verb | to fetch, to get
+mieten | verb | to rent
+verdienen | verb | to earn
+wissen | verb | to know (a fact)
+der Vorname | noun | first name
+finden | verb | to find, to think (opinion)
+aussehen | verb | to look (appearance)
+bekommen | verb | to get, to receive
+bringen | verb | to bring
+das Foto | noun | photo
+helfen | verb | to help
+das Handy | noun | mobile phone, cell phone
+die Mailbox | noun | voicemail
+der Link | noun | link
+der Laptop | noun | laptop
+die Leute | noun | people
+die Ferien | noun | holidays, vacation
+deshalb | adverb | that's why, therefore
+die Sache | noun | thing, matter
+die Stadt | noun | town, city
+der Blick | noun | look, view
+der Glückwunsch | noun | congratulations
+das Angebot | noun | offer
+mitnehmen | verb | to take along
+aufpassen | verb | to pay attention, to watch out
+die Ecke | noun | corner
+raten | verb | to guess, to advise
+der Schüler | noun | pupil, student
+der Bauch | noun | stomach, belly
+einkaufen | verb | to go shopping
+der Kühlschrank | noun | fridge, refrigerator
+aussteigen | verb | to get off, to get out
+einsteigen | verb | to get on, to get in
+der Satz | noun | sentence
+das Konto | noun | (bank) account
+hell | adjective | bright, light
+das Paket | noun | parcel, package
+gemütlich | adjective | cosy, comfortable
+der Ausflug | noun | trip, excursion
+das Salz | noun | salt
+besetzt | adjective | occupied, engaged
+die Lampe | noun | lamp
+geradeaus | adverb | straight ahead
+übernachten | verb | to stay overnight
+frühstücken | verb | to have breakfast
+der Ausländer | noun | foreigner
+grau | adjective | grey
+der Pullover | noun | pullover, sweater
+der Kindergarten | noun | kindergarten, nursery school
+der Arbeitsplatz | noun | workplace, job
+die Durchsage | noun | announcement
+die Marmelade | noun | jam
+vermieten | verb | to rent out, to let
+der Verein | noun | club, association
+das Praktikum | noun | internship
+die Bäckerei | noun | bakery
+die Grundschule | noun | primary school
+das Heft | noun | exercise book, notebook
+basteln | verb | to do crafts, to make things
+besichtigen | verb | to visit (sights), to view
+der Buchstabe | noun | letter (of the alphabet)
+die Briefmarke | noun | stamp
+die Hausaufgabe | noun | homework
+abfliegen | verb | to take off, to depart (by plane)
+die Anrede | noun | form of address
+die Seite | noun | side, page
+der Mensch | noun | person, human being
+der Hund | noun | dog
+der Arzt | noun | doctor
+der Partner | noun | partner
+hübsch | adjective | pretty
+die Karte | noun | card, ticket, map
+das Flugzeug | noun | plane, aeroplane
+die Küche | noun | kitchen, cuisine
+die Aufgabe | noun | task, exercise
+schließen | verb | to close
+dauern | verb | to last, to take (time)
+mitkommen | verb | to come along
+geschlossen | adjective | closed
+die Farbe | noun | colour
+die Post | noun | post, post office
+die Kleidung | noun | clothes, clothing
+riechen | verb | to smell
+das Fahrrad | noun | bicycle, bike
+die Mathematik | noun | maths, mathematics
+die Birne | noun | pear, light bulb
+der Bahnsteig | noun | platform
+die Eins | noun | one, top grade
+vorstellen | verb | to introduce, to imagine (sich)
+zuerst | adverb | first, at first
+die Klassenarbeit | noun | class test
+die Sprachenschule | noun | language school
+was für | phrase | what kind of
+überweisen | verb | to transfer (money)
+selbstständig | adjective | independent, self-employed
+der Reiseführer | noun | travel guide, guidebook
+ledig | adjective | single, unmarried
+kennenlernen | verb | to get to know, to meet
+kaufen | verb | to buy
+grillen | verb | to barbecue, to grill
+der Beruf | noun | job, profession
+baden | verb | to bathe, to have a bath
+das Wiedersehen | noun | reunion (Auf Wiedersehen = goodbye)
+Weihnachten | noun | Christmas | A1
+Ostern | noun | Easter | A1
+- die Weihnachten
+- das Ostern
+# grammar terminology from the Fit in Deutsch 1 appendix - exam metalanguage, not vocabulary
+- das Verb
+- das Präsens
+- das Präteritum
+- der Indikativ
+- der Konjunktiv
+- der Imperativ
+- das Nomen
+- das Genus
+- der Numerus
+- der Singular
+- der Plural
+- der Kasus
+- der Nominativ
+- der Genitiv
+- das Pronomen
+- der Nullartikel
+- der Dativ
+- der Akkusativ
+- das Adjektiv
+- prädikativ
+- die Komparation
+- die Präposition
+- temporal
+- modal
+- die Akkusativergänzung
+- die Dativergänzung
+- die Satzklammer
+- die Negation
+- das Tempus
+- der Modus
+- adverbial
+
+# ===== A2 =====================================================================
+- Angestellter
+- Auszubildender
+- Autor
+- gewesen
+- gehängt
+- das Geschwister
+der Angestellte | noun | employee | A2
+der Auszubildende | noun | apprentice, trainee | A2
+der Autor | noun | author | A2
+die Geschwister | noun | siblings | A2
+die Autorin | noun | female author
+die Bäckerin | noun | female baker
+die Doktorin | noun | female doctor
+die Handwerkerin | noun | female tradesperson
+die Journalistin | noun | female journalist
+die Kauffrau | noun | businesswoman, saleswoman
+die Künstlerin | noun | female artist
+die Mechanikerin | noun | female mechanic
+die Schauspielerin | noun | actress
+die Österreicherin | noun | female Austrian
+die Luxemburgerin | noun | female Luxembourger
+luxemburgisch | adjective | Luxembourgish
+das Neujahr | noun | New Year's Day
+morgens | adverb | in the morning(s)
+nachmittags | adverb | in the afternoon(s)
+vormittags | adverb | in the morning(s)
+austragen | verb | to deliver (newspapers, post)
+backen | verb | to bake
+beraten | verb | to advise
+berichten | verb | to report, to tell
+bedanken | verb | to say thank you (sich bedanken)
+beeilen | verb | to hurry (sich beeilen)
+bestehen | verb | to pass (an exam), to exist
+bewerben | verb | to apply (sich bewerben)
+bunt | adjective | colourful
+einverstanden | adjective | agreed, in agreement
+die Ehefrau | noun | wife
+erinnern | verb | to remind, to remember (sich)
+der Fernseher | noun | TV, television set
+die Firma | noun | company, firm
+freuen | verb | to be happy, to look forward to (sich freuen)
+hin | adverb | there (away from the speaker)
+her | adverb | here (towards the speaker)
+kümmern | verb | to take care of (sich kümmern um)
+leidtun | verb | to be sorry
+leihen | verb | to lend, to borrow
+meinen | verb | to think, to mean
+liefern | verb | to deliver
+merken | verb | to notice
+der Müll | noun | rubbish, garbage
+packen | verb | to pack
+die Papiere | noun | documents, papers
+die Pommes | noun | chips, French fries
+rechnen | verb | to calculate
+preiswert | adjective | good value, inexpensive
+probieren | verb | to try, to taste
+sammeln | verb | to collect
+das Rezept | noun | recipe, prescription
+schaffen | verb | to manage, to create
+selbst | word | oneself, even
+stören | verb | to disturb
+speichern | verb | to save (data), to store
+total | adjective | total, totally
+teilen | verb | to share, to divide
+unternehmen | verb | to do (an activity), to undertake
+umsteigen | verb | to change (trains, buses)
+vereinbaren | verb | to arrange, to agree on
+das Verkehrsmittel | noun | means of transport
+verlieben | verb | to fall in love (sich verlieben)
+vorn | adverb | at the front
+wehtun | verb | to hurt
+der Zettel | noun | note, slip of paper
+das Gute | noun | the good thing
+der Halt | noun | stop, hold
+die Ruhe | noun | quiet, calm, rest
+der Wagen | noun | car, carriage
+das Fest | noun | party, celebration
+die Menge | noun | amount, crowd
+der Rest | noun | rest, remainder
+der Mund | noun | mouth
+der Schluss | noun | end
+die Nähe | noun | nearness (in der Nähe = nearby)
+der Bescheid | noun | notification (Bescheid sagen = to let someone know)
+der Raum | noun | room, space
+der Punkt | noun | point, dot, full stop
+das Gericht | noun | dish (food), court
+die Bank | noun | bank, bench
+der Besuch | noun | visit, visitor
+das Schwein | noun | pig
+nachts | adverb | at night
+hängen | verb | to hang
+unterhalten | verb | to talk, to entertain (sich unterhalten)
+weinen | verb | to cry
+das Schloss | noun | castle, lock
+vorwärts | adverb | forwards
+dringend | adjective | urgent
+die Reihe | noun | row, turn
+der Vogel | noun | bird
+der Direktor | noun | director, head teacher
+klug | adjective | clever, intelligent
+schwach | adjective | weak
+die Krankheit | noun | illness, disease
+der Stock | noun | floor (storey), stick
+der Anzug | noun | suit
+dunkel | adjective | dark
+getrennt | adjective | separate(ly), separated
+das Programm | noun | programme
+der Stuhl | noun | chair
+wählen | verb | to choose, to vote, to dial
+der Star | noun | star (celebrity)
+scharf | adjective | sharp, spicy
+zuletzt | adverb | last, finally
+der Berg | noun | mountain
+deutlich | adjective | clear, distinct
+die Zahl | noun | number
+die Sendung | noun | programme (TV, radio), delivery
+das Mittel | noun | means, remedy
+fett | adjective | fatty, fat
+sparen | verb | to save (money)
+das Französisch | noun | French (language)
+hässlich | adjective | ugly
+eng | adjective | narrow, tight
+die Dusche | noun | shower
+nützlich | adjective | useful
+nass | adjective | wet
+die Wäsche | noun | laundry, washing
+die Prüfung | noun | exam, test
+trainieren | verb | to train, to exercise
+klappen | verb | to work out (es klappt)
+der Führerschein | noun | driving licence
+der Stift | noun | pen, pencil
+der Nachbar | noun | neighbour
+die Praxis | noun | practice, (doctor's) surgery
+dünn | adjective | thin
+faul | adjective | lazy, rotten
+das Blatt | noun | leaf, sheet (of paper)
+der Kredit | noun | loan, credit
+abschließen | verb | to lock, to complete
+übermorgen | adverb | the day after tomorrow
+einziehen | verb | to move in
+beschweren | verb | to complain (sich beschweren)
+die Tafel | noun | board, blackboard
+die Torte | noun | cake, gateau
+kündigen | verb | to cancel, to quit (a job)
+der Schirm | noun | umbrella, screen
+die Kellnerin | noun | waitress
+die Messe | noun | trade fair, mass (church)
+die Schere | noun | scissors
+braten | verb | to fry, to roast
+die Reinigung | noun | cleaning, dry cleaner's
+der Sänger | noun | singer
+die Köchin | noun | female cook
+das Geschirr | noun | dishes, crockery
+vorgestern | adverb | the day before yesterday
+auspacken | verb | to unpack
+kostenlos | adjective | free (of charge)
+das Stockwerk | noun | floor, storey
+das Zeugnis | noun | report card, certificate
+der Feiertag | noun | public holiday
+anmelden | verb | to register, to sign up
+der Bäcker | noun | baker
+die Tablette | noun | tablet, pill
+aktuell | adjective | current, up to date
+eintragen | verb | to enter, to write down
+die Verkäuferin | noun | saleswoman, shop assistant
+sportlich | adjective | sporty, athletic
+die Vermieterin | noun | landlady
+das Rind | noun | cattle, beef
+die Nudel | noun | noodle, pasta
+der Krankenpfleger | noun | male nurse
+das Tablet | noun | tablet (computer)
+
+# ===== B1 (part 1) ============================================================
+- angewendet
+- gefunden
+- geliefert
+- gelernt
+- verändert
+- verbessert
+- versteckt
+- det
+- wusch
+- das Modalverb
+- der Golf
+- das Pfingsten
+das Golf | noun | golf (sport) | B1
+Pfingsten | noun | Pentecost, Whitsun | B1
+verändern | verb | to change | B1
+verbessern | verb | to improve | B1
+die Ukrainerin | noun | female Ukrainian
+die Griechin | noun | female Greek
+ukrainisch | adjective | Ukrainian
+die Bundeskanzlerin | noun | female federal chancellor
+der Bundestag | noun | Bundestag (German parliament)
+der Bundespräsident | noun | federal president
+die Bundespräsidentin | noun | female federal president
+die Bürgermeisterin | noun | female mayor
+der Bundesrat | noun | Federal Council
+die Bundesrätin | noun | female federal councillor
+die Ministerin | noun | female minister
+der Regierungsrat | noun | government councillor
+die Regierungsrätin | noun | female government councillor
+das Jahrhundert | noun | century
+abhängen | verb | to depend (on)
+anschaffen | verb | to buy, to acquire
+anschnallen | verb | to fasten one's seatbelt
+anstellen | verb | to queue (sich anstellen), to employ
+aufhalten | verb | to stop, to stay (sich aufhalten)
+aufladen | verb | to charge (a battery), to load
+aufregen | verb | to upset, to get worked up (sich aufregen)
+ausrichten | verb | to pass on (a message)
+die Beamtin | noun | female civil servant
+beschäftigen | verb | to employ, to be busy with (sich)
+beschließen | verb | to decide
+besorgen | verb | to get, to obtain
+bewegen | verb | to move
+blitzen | verb | to flash (lightning)
+bloß | adverb | only, merely
+daher | adverb | therefore, from there
+duzen | verb | to say "du" to someone
+einrichten | verb | to furnish, to set up
+entwickeln | verb | to develop
+ergänzen | verb | to complete, to add
+erhöhen | verb | to raise, to increase
+erschrecken | verb | to frighten, to be frightened
+eventuell | adverb | possibly, perhaps
+extra | adverb | extra, separately
+erziehen | verb | to bring up, to educate
+fassen | verb | to grasp, to hold
+feststehen | verb | to be certain
+feststellen | verb | to find out, to establish
+das Gasthaus | noun | inn, restaurant
+gar | adverb | at all (gar nicht), cooked
+gerne | adverb | gladly, like to
+gewöhnen | verb | to get used to (sich gewöhnen an)
+hinweisen | verb | to point out
+je | adverb | each, ever (je ... desto = the ... the)
+der Kloß | noun | dumpling
+los | adverb | off, going on (Was ist los? = What's wrong?)
+die Medien | noun | media
+die Münze | noun | coin
+nachher | adverb | afterwards, later
+nämlich | adverb | namely, you see
+die Nichtraucherin | noun | female non-smoker
+nutzen | verb | to use
+öfter | adverb | more often, quite often
+der Ober | noun | waiter
+die Ordination | noun | doctor's surgery (Austria)
+die Patientin | noun | female patient
+pauschal | adjective | flat-rate, all-inclusive
+peinlich | adjective | embarrassing
+die Pension | noun | guesthouse, pension
+die Praktikantin | noun | female intern
+quer | adverb | across, crosswise
+rechtzeitig | adverb | in time, on time
+reichen | verb | to be enough, to pass (hand)
+die Reporterin | noun | female reporter
+schauen | verb | to look, to watch
+die Schriftstellerin | noun | female writer
+die Schularbeit | noun | class test (Austria), schoolwork
+siegen | verb | to win
+solange | conjunction | as long as
+sorgen | verb | to take care of, to worry (sich sorgen)
+die Sauce | noun | sauce
+spülen | verb | to rinse, to wash up
+spüren | verb | to feel, to sense
+die Spielerin | noun | female player
+ständig | adjective | constant, constantly
+die Sportlerin | noun | sportswoman
+die Zweitsprache | noun | second language
+der Stau | noun | traffic jam
+stecken | verb | to put, to stick
+steigen | verb | to climb, to rise
+stürzen | verb | to fall, to crash
+die Teilnehmerin | noun | female participant
+die Tüte | noun | bag (paper, plastic)
+die Stiege | noun | stairs (Austria)
+überlegen | verb | to think about, to consider
+überreden | verb | to persuade
+die Überstunde | noun | overtime (hour)
+umso | conjunction | all the more (je ... umso)
+ungefähr | adverb | about, approximately
+unterrichten | verb | to teach
+das Unglück | noun | accident, misfortune
+unterstreichen | verb | to underline
+verhaften | verb | to arrest
+verpflegen | verb | to cater for, to feed
+die Vermietung | noun | renting out
+verpacken | verb | to wrap, to pack
+vertreten | verb | to represent, to stand in for
+vorlesen | verb | to read aloud
+winken | verb | to wave
+der Wirt | noun | landlord (of a pub), host
+die Wirtin | noun | landlady, female host
+die Zeugin | noun | female witness
+zugehen | verb | to happen, to go towards
+das Zuhause | noun | home
+die Zuhörerin | noun | female listener
+zuschauen | verb | to watch
+die Zuschauerin | noun | female spectator
+zuständig | adjective | responsible
+zwar | adverb | admittedly (zwar ... aber)
+das Recht | noun | right, law
+der Grund | noun | reason, ground
+die Schuld | noun | guilt, fault, debt
+die Tat | noun | act, deed
+das Opfer | noun | victim, sacrifice
+der Boden | noun | floor, ground
+führen | verb | to lead, to guide
+der Meister | noun | master, champion
+die Rolle | noun | role, roll
+schießen | verb | to shoot
+die Lage | noun | situation, location
+die Kraft | noun | strength, power
+die Gesellschaft | noun | society, company
+das Zeichen | noun | sign, signal
+die Spur | noun | trace, track, lane
+leisten | verb | to achieve, to afford (sich leisten)
+worüber | adverb | about what
+schaden | verb | to harm
+schätzen | verb | to estimate, to appreciate
+treten | verb | to kick, to step
+die Gewalt | noun | violence, force
+das Tor | noun | gate, goal
+das Lager | noun | storage, warehouse, camp
+der Gang | noun | corridor, gear, course (of a meal)
+lösen | verb | to solve, to loosen
+entlassen | verb | to dismiss, to release
+selbstverständlich | adverb | of course, natural
+die Form | noun | shape, form
+satt | adjective | full (not hungry)
+handeln | verb | to act, to trade, to be about (es handelt sich um)
+schick | adjective | smart, chic
+erwachsen | adjective | grown-up, adult
+die Botschaft | noun | message, embassy
+locker | adjective | loose, relaxed
+einsam | adjective | lonely
+knapp | adjective | scarce, just, barely
+der Prozess | noun | trial, process
+der Hof | noun | yard, courtyard, farm
+umgehen | verb | to deal with, to avoid
+springen | verb | to jump
+interessieren | verb | to interest, to be interested (sich)
+die Mitarbeiterin | noun | female employee
+mitten | adverb | in the middle (of)
+die Nachbarin | noun | female neighbour
+die Anwältin | noun | female lawyer
+die Wissenschaftlerin | noun | female scientist
+der Chat | noun | chat
+die Realschule | noun | secondary school (Realschule)
+die Mathe | noun | maths
+zuordnen | verb | to match, to assign
+der Spot | noun | (TV) ad, spot
+jobben | verb | to have a casual job
+akzeptieren | verb | to accept
+annehmen | verb | to accept, to assume
+die Annonce | noun | (classified) ad
+auffordern | verb | to ask, to invite
+aufheben | verb | to pick up, to keep
+bedienen | verb | to serve, to operate
+behindern | verb | to obstruct, to hinder
+betreuen | verb | to look after
+bieten | verb | to offer
+danach | adverb | after that, afterwards
+empfangen | verb | to receive, to welcome
+ernähren | verb | to feed, to nourish
+erstellen | verb | to create, to produce
+festhalten | verb | to hold on (to)
+festlegen | verb | to fix, to set
+festsetzen | verb | to set, to fix
+fortsetzen | verb | to continue
+gelingen | verb | to succeed, to work out
+die Gratulation | noun | congratulations
+gucken | verb | to look, to watch
+haltbar | adjective | durable, long-lasting
+inzwischen | adverb | meanwhile, in the meantime
+kleben | verb | to stick, to glue
+meinetwegen | adverb | for all I care, because of me
+melden | verb | to report, to register (sich melden)
+die Nachhilfe | noun | tutoring, extra lessons
+nebenbei | adverb | on the side, incidentally
+regeln | verb | to regulate, to sort out
+die Rente | noun | pension
+schützen | verb | to protect
+sowohl | conjunction | both (sowohl ... als auch)
+stimmen | verb | to be correct, to vote
+umsonst | adverb | free (of charge), in vain
+verbringen | verb | to spend (time)
+verlangen | verb | to demand, to ask for
+verraten | verb | to betray, to give away (a secret)
+versichern | verb | to insure, to assure
+vorhaben | verb | to plan, to intend
+vorkommen | verb | to happen, to occur
+zunehmen | verb | to increase, to put on weight
+erfordern | verb | to require
+die Fortbildung | noun | further training
+geschehen | verb | to happen
+genehmigen | verb | to approve, to permit
+gießen | verb | to pour, to water (plants)
+der Hafen | noun | port, harbour
+der Hauptbahnhof | noun | main station
+klopfen | verb | to knock
+der Krankenwagen | noun | ambulance
+losfahren | verb | to set off
+das Medikament | noun | medicine, medication
+die Mehrwertsteuer | noun | VAT
+mittlerweile | adverb | meanwhile, by now
+nachdenken | verb | to think (about), to reflect
+präsentieren | verb | to present
+realisieren | verb | to realise, to carry out
+schließlich | adverb | finally, after all
+staubsaugen | verb | to vacuum, to hoover
+umarmen | verb | to hug
+der Verlag | noun | publisher, publishing house
+verzichten | verb | to do without, to give up
+vorschlagen | verb | to suggest
+voraus | adverb | ahead
+weder | conjunction | neither (weder ... noch)
+die Weiterbildung | noun | further training
+der Gott | noun | God, god
+die Erde | noun | earth, Earth, soil
+der Sinn | noun | sense, meaning
+die Stimme | noun | voice, vote
+der Anwalt | noun | lawyer
+die Regierung | noun | government
+die Vergangenheit | noun | the past
+das Gesetz | noun | law
+der Auftrag | noun | order, task
+wahnsinnig | adjective | crazy, incredibly
+aufgeben | verb | to give up, to post (a letter)
+durcheinander | adverb | in a mess, confused
+abwaschen | verb | to wash up, to do the dishes
+das Altenheim | noun | old people's home
+aufwachen | verb | to wake up
+die Aushilfe | noun | temporary worker, temp
+ausreichen | verb | to be enough
+ausschließlich | adverb | exclusively, only
+ausziehen | verb | to move out, to take off (clothes)
+beachten | verb | to observe, to pay attention to
+der Geldautomat | noun | cash machine, ATM
+die Gebrauchsanweisung | noun | instructions (for use)
+dreimal | adverb | three times
+
+# ===== B1 (part 2) ============================================================
+- gesungen
+- befreit
+- verabredet
+die Decke | noun | blanket, ceiling
+die Station | noun | stop, station, (hospital) ward
+schief | adjective | crooked, wrong (schiefgehen)
+der Strom | noun | electricity, current, river
+treiben | verb | to drive, to do (Sport treiben)
+dauernd | adverb | constantly, all the time
+das Pech | noun | bad luck
+das Publikum | noun | audience
+der Sturm | noun | storm
+wirken | verb | to work, to have an effect, to seem
+aufnehmen | verb | to record, to take in, to pick up
+spazieren | verb | to walk, to stroll
+eindeutig | adjective | clear, unambiguous
+die Unterhaltung | noun | conversation, entertainment
+neugierig | adjective | curious, nosy
+fressen | verb | to eat (animals)
+der Stoff | noun | fabric, material, substance
+der Staat | noun | state, country
+lecker | adjective | tasty, delicious
+dicht | adjective | dense, tight, closed
+die Leiter | noun | ladder
+das Werk | noun | work, factory
+soviel | conjunction | as far as (soviel ich weiß)
+die Stimmung | noun | mood, atmosphere
+der Zeuge | noun | witness
+erfüllen | verb | to fulfil
+der Einfluss | noun | influence
+der Stern | noun | star
+leiten | verb | to lead, to manage
+unheimlich | adjective | creepy, incredibly
+die Wunde | noun | wound
+der Bauer | noun | farmer
+wenden | verb | to turn (over), to turn around
+plus | conjunction | plus
+die Fabrik | noun | factory
+klingen | verb | to sound, to ring
+das Benzin | noun | petrol, gasoline
+die Mauer | noun | wall
+der Abschluss | noun | degree, completion, conclusion
+die Technik | noun | technology, technique
+innen | adverb | inside
+die Gemeinde | noun | municipality, community
+einfallen | verb | to occur to (es fällt mir ein), to come to mind
+der Humor | noun | humour
+verbinden | verb | to connect, to bandage
+einstellen | verb | to hire, to adjust, to stop
+senden | verb | to send, to broadcast
+schalten | verb | to switch, to change gear
+taub | adjective | deaf, numb
+doppelt | adjective | double, twice
+scheiden | verb | to divorce (sich scheiden lassen), to separate
+die Laune | noun | mood
+heimlich | adjective | secret, secretly
+das Netz | noun | net, network
+die Umgebung | noun | surroundings, area
+treu | adjective | loyal, faithful
+abnehmen | verb | to lose weight, to take off, to answer (the phone)
+brennen | verb | to burn
+löschen | verb | to delete, to extinguish
+mitteilen | verb | to inform, to tell
+einsetzen | verb | to use, to put in
+das Modell | noun | model
+verpflichtet | adjective | obliged
+die Werbung | noun | advertising, advertisement
+das Amt | noun | office, authority
+die Marke | noun | brand, stamp
+stammen | verb | to come from (stammen aus)
+das Kostüm | noun | costume, (women's) suit
+die Mannschaft | noun | team
+die Ausbildung | noun | training, apprenticeship
+die Strecke | noun | route, distance, line
+die Aussicht | noun | view, prospect
+der Profi | noun | professional, pro
+betrügen | verb | to cheat, to deceive
+glatt | adjective | smooth, slippery
+die Partei | noun | (political) party
+das Verhältnis | noun | relationship, ratio
+die Methode | noun | method
+gespannt | adjective | curious, excited (gespannt sein auf)
+die Stufe | noun | step, level
+der Betrieb | noun | company, business, operation
+der Gegensatz | noun | contrast, opposite
+die Entwicklung | noun | development
+die Etage | noun | floor, storey
+der Zusammenhang | noun | connection, context
+die Nadel | noun | needle
+die Einrichtung | noun | furnishings, facility, institution
+die Anlage | noun | facility, attachment, system
+die Kommunikation | noun | communication
+die Bedingung | noun | condition, requirement
+das Quartier | noun | accommodation, quarter
+die Gemeinschaft | noun | community
+einnehmen | verb | to take (medicine), to take in
+umgekehrt | adjective | reverse, the other way round
+gelten | verb | to be valid, to apply
+minus | conjunction | minus
+die Scheibe | noun | slice, pane
+geeignet | adjective | suitable
+der Saal | noun | hall
+einschließlich | preposition | including
+der Schein | noun | (bank)note, certificate, light
+das Kennzeichen | noun | licence plate, characteristic
+der Nagel | noun | nail
+die Lehre | noun | apprenticeship, teaching
+die Bestätigung | noun | confirmation
+die Garderobe | noun | cloakroom, coat rack
+der Kasten | noun | box, crate
+der Salon | noun | salon, lounge
+das Geschlecht | noun | sex, gender
+die Ausgabe | noun | edition, expense, output
+die Gewerkschaft | noun | trade union
+das Regal | noun | shelf
+der Friede | noun | peace
+sichtbar | adjective | visible
+der Bund | noun | federation, alliance
+intensiv | adjective | intensive, intense
+angeben | verb | to state, to give (information), to show off
+die Vermittlung | noun | placement, mediation
+der Vorwurf | noun | reproach, accusation
+die Besserung | noun | improvement (Gute Besserung! = Get well soon!)
+einzeln | adjective | individual, single
+das Pflaster | noun | plaster (for wounds), pavement
+auflösen | verb | to dissolve, to break up
+abheben | verb | to withdraw (money), to lift, to take off
+tippen | verb | to type, to tap
+maximal | adverb | at most, maximum
+ausfallen | verb | to be cancelled, to fail
+tanken | verb | to fill up (with petrol)
+der Lift | noun | lift, elevator
+fördern | verb | to support, to promote
+vergeblich | adjective | in vain, futile
+verlängern | verb | to extend
+blühen | verb | to bloom
+das Streichholz | noun | match
+die Darstellung | noun | representation, depiction
+die Anleitung | noun | instructions, guidance
+der Stempel | noun | stamp
+der Nachwuchs | noun | offspring, new generation
+mittlere | adjective | middle, medium
+der Schnupfen | noun | cold (runny nose)
+der Moderator | noun | presenter, host
+die Begründung | noun | reason, justification
+die Mücke | noun | mosquito, gnat
+flexibel | adjective | flexible
+die Mappe | noun | folder, portfolio
+schminken | verb | to put on make-up (sich schminken)
+der Grieche | noun | Greek (man)
+die Reportage | noun | report, documentary
+entgegenkommen | verb | to come towards, to accommodate
+das Nahrungsmittel | noun | food, foodstuff
+die Aufforderung | noun | request, call
+der Beleg | noun | receipt, proof
+das Schnitzel | noun | schnitzel, escalope
+die Krippe | noun | crèche, manger
+der Türke | noun | Turk
+das Hilfsmittel | noun | aid, tool
+die Mahnung | noun | reminder (of payment), warning
+die Drogerie | noun | chemist's, drugstore
+zukünftig | adjective | future
+die Folie | noun | slide, foil
+die Umleitung | noun | diversion, detour
+voraussichtlich | adverb | probably, expected
+die Grafik | noun | graphic, chart
+die Nachspeise | noun | dessert
+zentral | adjective | central
+der Ukrainer | noun | Ukrainian (man)
+die Rundfahrt | noun | tour, round trip
+die Direktorin | noun | female director, head teacher
+die Methode | noun | method
+die Schachtel | noun | box
+die Tüte | noun | bag (paper, plastic)
+die Fläche | noun | area, surface
+das Lexikon | noun | encyclopedia
+die Garderobe | noun | cloakroom, coat rack
+
+# ===== Goethe words Wiktionary could not resolve (added by hand) ==============
+Deutschland | noun | Germany | A1
+Europa | noun | Europe | A1
+Italien | noun | Italy | A1
+England | noun | England | A1
+Finnland | noun | Finland | A1
+Mexiko | noun | Mexico | A1
+Österreich | noun | Austria | A2
+die Schweiz | noun | Switzerland | A2
+Luxemburg | noun | Luxembourg | A2
+die Türkei | noun | Turkey | B1
+die Ukraine | noun | Ukraine | B1
+Griechenland | noun | Greece | B1
+der Beamte | noun | civil servant | A1
+beste | adjective | best | A1
+mich | word | me | A1
+mir | word | (to) me | A1
+dich | word | you (accusative) | A1
+dir | word | (to) you | A1
+ihm | word | (to) him | A1
+uns | word | us, (to) us | A1
+die E-Mail | noun | email | A1
+der Erwachsene | noun | adult | A1
+der Fahrer | noun | driver | A1
+die Fahrerin | noun | female driver | A2
+geboren | adjective | born | A1
+der Jugendliche | noun | young person, teenager | A1
+die Lebensmittel | noun | food, groceries | A1
+lieber | adverb | rather, preferably | A1
+der Lkw | noun | lorry, truck | A1
+meiste | word | most | A1
+nächste | adjective | next | A1
+der Verwandte | noun | relative | A1
+der Blog | noun | blog | A1
+das Comic | noun | comic | A1
+die Deutsche | noun | German (woman) | A1
+der Europäer | noun | European | A1
+der Italiener | noun | Italian (man) | A1
+der Engländer | noun | Englishman | A1
+recht haben | phrase | to be right | A1
+die Süßigkeiten | noun | sweets, candy | A1
+auf sein | phrase | to be open | A1
+aus sein | phrase | to be over, to be off | A1
+zu sein | phrase | to be closed | A1
+weg sein | phrase | to be gone, to be away | A1
+der Prüfer | noun | examiner | A2
+die Klassenfahrt | noun | school trip | A2
+Latein | noun | Latin | A2
+der Bekannte | noun | acquaintance | A2
+das Café | noun | café | A2
+eigene | adjective | own | A2
+die Fundsachen | noun | lost property | A2
+manche | word | some, many a | A2
+die Möbel | noun | furniture | A2
+der Service | noun | service | A2
+umziehen | verb | to move (house), to change clothes (sich)
+das Abo | noun | subscription | B1
+der ICE | noun | ICE (high-speed train) | B1
+das Kfz | noun | motor vehicle | B1
+der Azubi | noun | apprentice, trainee | B1
+der Pkw | noun | car | B1
+die WG | noun | flat share | B1
+das Ketchup | noun | ketchup | B1
+das Sandwich | noun | sandwich | B1
+der User | noun | user | B1
+die Spielgruppe | noun | playgroup | B1
+der Nationalrat | noun | National Council (Austria, Switzerland) | B1
+die Abgase | noun | exhaust fumes | B1
+der Angehörige | noun | relative, family member | B1
+amüsieren | verb | to have fun (sich amüsieren) | B1
+anstrengen | verb | to make an effort (sich anstrengen) | B1
+befinden | verb | to be (located) (sich befinden) | B1
+bemühen | verb | to try hard (sich bemühen) | B1
+beteiligen | verb | to take part (sich beteiligen) | B1
+die Bewohnerin | noun | female resident | B1
+die Daten | noun | data | B1
+eignen | verb | to be suitable (sich eignen) | B1
+einigen | verb | to agree (sich einigen) | B1
+einzige | adjective | only, single | B1
+entschließen | verb | to decide (sich entschließen) | B1
+entspannend | adjective | relaxing | B1
+erholen | verb | to recover, to relax (sich erholen) | B1
+erkälten | verb | to catch a cold (sich erkälten) | B1
+erkundigen | verb | to inquire (sich erkundigen) | B1
+frühere | adjective | former, earlier | B1
+gesamte | adjective | whole, entire | B1
+irren | verb | to be wrong (sich irren) | B1
+der Intensivkurs | noun | intensive course | B1
+die Kenntnisse | noun | knowledge, skills | B1
+konzentrieren | verb | to concentrate (sich konzentrieren) | B1
+langweilen | verb | to be bored (sich langweilen) | B1
+lohnen | verb | to be worth it (es lohnt sich) | B1
+nähern | verb | to approach (sich nähern) | B1
+noch mal | phrase | again, once more | B1
+nützen | verb | to be of use | B1
+die Personalien | noun | personal details | B1
+Prost | word | cheers! | B1
+sämtliche | word | all | B1
+die Senioren | noun | senior citizens | B1
+so viel | phrase | so much, as much | B1
+sogenannte | adjective | so-called | B1
+solche | word | such | B1
+stehen bleiben | phrase | to stop, to stand still | B1
+die Tropfen | noun | drops | B1
+die Unterlagen | noun | documents | B1
+untersagt | adjective | prohibited | B1
+verhalten | verb | to behave (sich verhalten) | B1
+verlaufen | verb | to get lost (sich verlaufen) | B1
+die Versichertenkarte | noun | health insurance card | B1
+das Virus | noun | virus | B1
+vordere | adjective | front | B1
+hintere | adjective | rear, back | B1
+untere | adjective | lower | B1
+weigern | verb | to refuse (sich weigern) | B1
+weitere | adjective | further, additional | B1
+wundern | verb | to be surprised (sich wundern) | B1
+die Zinsen | noun | interest (on money) | B1
+die Zutaten | noun | ingredients | B1
