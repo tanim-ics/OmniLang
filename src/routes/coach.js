@@ -1,7 +1,8 @@
 import express from 'express';
 import User from '../models/User.js';
 import Vocabulary from '../models/Vocabulary.js';
-import { callOllama } from '../utils/ollama.js';
+import { callOllama, TASK } from '../utils/ollama.js';
+import { localDateStr } from '../utils/game.js';
 
 const router = express.Router();
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || '';
@@ -65,27 +66,20 @@ const FALLBACK_RECOMMENDATIONS = {
     }
 };
 
-// GET /api/coach/recommendations
-router.get('/recommendations', async (req, res) => {
-    try {
-        const { userId } = req.query;
-        if (!userId) return res.status(400).json({ error: 'Missing userId' });
+// One AI plan per learner per day (or until new mistakes arrive) — the dashboard
+// loads often and a fresh 12B generation each time would block the GPU for other modules.
+const planCache = new Map();
 
-        let user = await User.findOne({ userId });
-        if (!user) {
-            user = await User.create({ userId, username: 'Learner', currentLevel: 'A2' });
-        }
+const inflight = new Map();
 
-        const level = user.currentLevel || 'A2';
-        const fallback = FALLBACK_RECOMMENDATIONS[level] || FALLBACK_RECOMMENDATIONS.A2;
-        const targetModel = user.selectedModel || DEFAULT_MODEL;
+async function generatePlan(user, level, targetModel, cacheKey) {
+    const userId = user.userId;
+    const recentErrors = (user.recentMistakes || []).slice(-5).map(m => m.error + (m.fix ? ` -> ${m.fix}` : '')).join('; ');
+    const totalWords = user.totalWordsLearned || 0;
+    const streak = user.streak || 0;
+    const userAddedCount = await Vocabulary.countDocuments({ userId });
 
-        const recentErrors = (user.recentMistakes || []).slice(-5).map(m => m.error + (m.fix ? ` -> ${m.fix}` : '')).join('; ');
-        const totalWords = user.totalWordsLearned || 0;
-        const streak = user.streak || 0;
-        const userAddedCount = await Vocabulary.countDocuments({ userId });
-
-        const coachPrompt = `You are an elite German Language Learning Coach assessing a CEFR ${level} student.
+    const coachPrompt = `You are an elite German Language Learning Coach assessing a CEFR ${level} student.
 Student Data:
 - Current Level: ${level}
 - Words Learned: ${totalWords}
@@ -99,63 +93,94 @@ Respond ONLY with a valid JSON object in this EXACT structure:
   "focusTopic": "<Specific grammar/vocabulary focus area for ${level}, e.g. Dativ Prepositions>",
   "reasoning": "<1-2 sentences in English explaining why this specific topic is crucial for the learner right now>",
   "missions": [
-    {
-      "id": 1,
-      "title": "<Short title for mission 1>",
-      "module": "vocab",
-      "actionText": "Practice Vocab",
-      "xp": 10,
-      "hint": "<Actionable tip for this mission>"
-    },
-    {
-      "id": 2,
-      "title": "<Short title for mission 2>",
-      "module": "chat",
-      "starter": "<German conversational sentence starter for Lukas>",
-      "actionText": "Chat with Lukas",
-      "xp": 15,
-      "hint": "<Actionable tip for this mission>"
-    },
-    {
-      "id": 3,
-      "title": "<Short title for mission 3>",
-      "module": "writing",
-      "prompt": "<German writing prompt for the student to write an essay on>",
-      "actionText": "Write Essay",
-      "xp": 20,
-      "hint": "<Actionable tip for this mission>"
-    }
+{
+  "id": 1,
+  "title": "<Short title for mission 1>",
+  "module": "vocab",
+  "actionText": "Practice Vocab",
+  "xp": 10,
+  "hint": "<Actionable tip for this mission>"
+},
+{
+  "id": 2,
+  "title": "<Short title for mission 2>",
+  "module": "chat",
+  "starter": "<German conversational sentence starter for Lukas>",
+  "actionText": "Chat with Lukas",
+  "xp": 15,
+  "hint": "<Actionable tip for this mission>"
+},
+{
+  "id": 3,
+  "title": "<Short title for mission 3>",
+  "module": "writing",
+  "prompt": "<German writing prompt for the student to write an essay on>",
+  "actionText": "Write Essay",
+  "xp": 20,
+  "hint": "<Actionable tip for this mission>"
+}
   ],
   "proverb": {
-    "german": "<Famous German proverb or idiom>",
-    "english": "<English translation/meaning>",
-    "literal": "<Literal word-for-word translation>"
+"german": "<Famous German proverb or idiom>",
+"english": "<English translation/meaning>",
+"literal": "<Literal word-for-word translation>"
   },
   "coachTip": "<1 encouraging pedagogical tip in English for German learners at ${level}>"
 }`;
 
+    try {
+        const result = await callOllama(targetModel, [{ role: 'user', content: coachPrompt }], { format: 'json', options: TASK.coach, background: true });
+        let parsed = null;
+        const cleanContent = (result.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
         try {
-            const result = await callOllama(targetModel, [{ role: 'user', content: coachPrompt }], { format: 'json' });
-            let parsed = null;
-            const cleanContent = (result.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-            try {
-                parsed = JSON.parse(cleanContent || '{}');
-            } catch (e) {
-                const match = cleanContent.match(/\{[\s\S]*\}/);
-                if (match) parsed = JSON.parse(match[0]);
-            }
+            parsed = JSON.parse(cleanContent || '{}');
+        } catch (e) {
+            const match = cleanContent.match(/\{[\s\S]*\}/);
+            if (match) parsed = JSON.parse(match[0]);
+        }
 
-            if (parsed && parsed.focusTopic && parsed.missions) {
-                return res.json({
-                    success: true,
-                    source: 'ai',
-                    modelUsed: result.modelUsed,
-                    level,
-                    recommendations: parsed
-                });
-            }
-        } catch (llmErr) {
-            console.warn('[coach] LLM generation error, using curated plan:', llmErr.message);
+        if (parsed && parsed.focusTopic && Array.isArray(parsed.missions)) {
+            const payload = { success: true, source: 'ai', modelUsed: result.modelUsed, level, recommendations: parsed };
+            for (const k of planCache.keys()) if (k.startsWith(`${userId}|`)) planCache.delete(k);
+            planCache.set(cacheKey, payload);
+            return payload;
+        }
+    } catch (llmErr) {
+        console.warn('[coach] LLM generation error, using curated plan:', llmErr.message);
+    }
+    return null;
+
+}
+
+// GET /api/coach/recommendations  (?refresh=1 waits for a fresh AI plan)
+router.get('/recommendations', async (req, res) => {
+    try {
+        const { userId, refresh } = req.query;
+        if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+        let user = await User.findOne({ userId });
+        if (!user) {
+            user = await User.create({ userId, username: 'Learner', currentLevel: 'A2' });
+        }
+
+        const level = user.currentLevel || 'A2';
+        const fallback = FALLBACK_RECOMMENDATIONS[level] || FALLBACK_RECOMMENDATIONS.A2;
+        const targetModel = user.selectedModel || DEFAULT_MODEL;
+
+        const cacheKey = `${userId}|${level}|${localDateStr()}|${(user.recentMistakes || []).length}`;
+        if (!refresh && planCache.has(cacheKey)) return res.json(planCache.get(cacheKey));
+
+        // One generation per key at a time; page loads share it instead of queueing on the GPU.
+        if (!inflight.has(cacheKey)) {
+            inflight.set(cacheKey, generatePlan(user, level, targetModel, cacheKey)
+                .finally(() => inflight.delete(cacheKey)));
+        }
+        if (refresh) {
+            const payload = await inflight.get(cacheKey);
+            if (payload) return res.json(payload);
+        } else {
+            // Answer instantly with the curated plan; the client polls until the AI plan is cached.
+            return res.json({ success: true, source: 'curated', pending: true, modelUsed: targetModel, level, recommendations: fallback });
         }
 
         // Return curated fallback
@@ -195,7 +220,7 @@ Explain concepts clearly, give concrete examples with German & English translati
         const result = await callOllama(targetModel, [
             { role: 'system', content: coachSystem },
             { role: 'user', content: question }
-        ]);
+        ], { options: TASK.coach });
 
         const advice = result.content || 'Keep practicing every day!';
         res.json({ advice, modelUsed: result.modelUsed });

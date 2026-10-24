@@ -1,19 +1,65 @@
 import express from 'express';
 import Conversation from '../models/Conversation.js';
 import User        from '../models/User.js';
-import { checkAndAwardAchievements, getOrCreateDailyStatus } from './auth.js';
-import { callOllama } from '../utils/ollama.js';
+import { callOllama, TASK } from '../utils/ollama.js';
+import { proofread } from '../utils/proofread.js';
+import { awardActivity } from '../utils/game.js';
 
 const router = express.Router();
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || '';
 
-// ---- System prompt builder ----
-function buildSystemPrompt(level) {
-    return `You are Lukas, an expert German language teacher and friendly conversation partner for a CEFR ${level} student. You MUST follow these rules in every response:
-1. Reply in clear, grammatically correct German at exactly ${level} CEFR complexity — use simple sentences and familiar vocabulary appropriate for the level. Do NOT use complex subordinate clauses, subjunctive, or future perfect if the level is A1 or A2.
-2. Keep your entire reply to a maximum of 3 sentences.
-3. CRITICAL: If the user made any grammar, spelling, or word-choice error in their message, you MUST begin your reply with a correction at the very top in this exact format: [Correction: <brief English explanation of the error and the correct German form>]. Then continue the conversation normally.
-4. End with a natural follow-up question to keep the dialogue going.`;
+// ---- Tutor prompt ----
+const LEVEL_STYLE = {
+    A1: 'Very short main clauses, present tense only, the 500 most common words.',
+    A2: 'Short sentences, Präsens and Perfekt, simple connectors (und, aber, weil, dann).',
+    B1: 'Natural everyday German, subordinate clauses (dass, obwohl, wenn), Präteritum of common verbs.',
+    B2: 'Fluent German with Konjunktiv II, passive voice and varied connectors.',
+    C1: 'Sophisticated, idiomatic German with nominal style and nuanced vocabulary.'
+};
+
+function buildSystemPrompt(level, { topic = '' } = {}) {
+    return `Du bist Lukas, ein herzlicher, geduldiger Deutschlehrer und Gesprächspartner für eine Person auf CEFR-Niveau ${level}.
+Sprachniveau deiner Antwort: ${LEVEL_STYLE[level] || LEVEL_STYLE.A2}
+${topic ? `Die Person beantwortet gerade diese Frage: "${topic}"\n` : ''}Regeln:
+- Antworte NUR auf Deutsch, in höchstens 3 kurzen Sätzen.
+- Reagiere konkret und natürlich auf den Inhalt der letzten Nachricht, wie ein echter Freund.
+- Frag NIE nach etwas, das die Person gerade schon erzählt hat; frag nach einem neuen Detail (Wer? Warum? Wie war es?).
+- Korrigiere KEINE Fehler (das macht ein anderes System) und erwähne keine Grammatik.
+- Beende deine Antwort mit genau EINER passenden Anschlussfrage.`;
+}
+
+// Keep at most 3 sentences, as the spec requires (small models drift).
+function capSentences(text, max = 3) {
+    const parts = text.match(/[^.!?]+[.!?]+["»“]?|[^.!?]+$/g) || [text];
+    return parts.slice(0, max).join(' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Ask the tutor and return { reply, correction } where reply carries the [Correction: …] prefix. */
+async function askTutor(model, level, history, message, ctx) {
+    const messages = [
+        { role: 'system', content: buildSystemPrompt(level, ctx) },
+        ...history.slice(-8).map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            // Strip earlier correction prefixes so the model doesn't imitate them.
+            content: m.content.replace(/^\[Correction:[\s\S]*?\]\s*/i, '')
+        })),
+        { role: 'user', content: message }
+    ];
+
+    // Independent calls — Ollama runs them concurrently when OLLAMA_NUM_PARALLEL > 1.
+    const [chat, correction] = await Promise.all([
+        callOllama(model, messages, { options: TASK.chat }),
+        proofread(model, level, message, ctx.speaking)
+    ]);
+
+    let reply = capSentences(chat.content.replace(/^\[Correction:[\s\S]*?\]\s*/i, '').trim());
+    if (!reply || reply.length < 4) reply = 'Das klingt spannend! Erzähl mir bitte mehr darüber. Was denkst du dazu?';
+
+    if (correction) {
+        const why = correction.explanation ? `${correction.explanation} ` : '';
+        reply = `[Correction: ${why}→ „${correction.corrected}“] ${reply}`;
+    }
+    return { reply, correction };
 }
 
 // GET /api/chat/sessions — fetch all conversation sessions for user
@@ -30,7 +76,7 @@ router.get('/sessions', async (req, res) => {
 
         const formatted = sessions.map(s => {
             const msgs = s.messages || [];
-            const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].content : '';
+            const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].content.replace(/^\[Correction:[\s\S]*?\]\s*/i, '') : '';
             const firstUserMsg = msgs.find(m => m.sender === 'user');
             let derivedTitle = s.title;
             if (!derivedTitle || derivedTitle === 'Neues Gespräch') {
@@ -118,13 +164,11 @@ router.post('/new-session', async (req, res) => {
 // POST /api/chat — send a conversational message
 router.post('/', async (req, res) => {
     try {
-        const { message, userId, level, conversationId, isSpeaking } = req.body;
+        const { message, userId, level, conversationId, isSpeaking, speakingPrompt } = req.body;
 
         if (!message || !userId || !level) {
             return res.status(400).json({ error: 'Missing required fields: message, userId, level' });
         }
-
-        const todayStr = new Date().toISOString().split('T')[0];
 
         // Upsert user, update level if changed
         let user = await User.findOne({ userId });
@@ -139,7 +183,9 @@ router.post('/', async (req, res) => {
 
         // Resolve conversation: specified ID, or latest unended conversation, or create a new one
         let conversation = null;
-        if (conversationId) {
+        if (isSpeaking) {
+            // speaking drills don't touch chat threads
+        } else if (conversationId) {
             conversation = await Conversation.findOne({ _id: conversationId, userId });
             if (conversation && conversation.ended) {
                 // If the specified conversation was already ended, start a fresh one
@@ -147,7 +193,7 @@ router.post('/', async (req, res) => {
             }
         }
 
-        if (!conversation) {
+        if (!conversation && !isSpeaking) {
             conversation = await Conversation.findOne({
                 userId,
                 level,
@@ -155,7 +201,9 @@ router.post('/', async (req, res) => {
             }).sort({ updatedAt: -1 });
         }
 
-        if (!conversation) {
+        if (isSpeaking) {
+            // no thread
+        } else if (!conversation) {
             conversation = await Conversation.create({
                 userId,
                 level,
@@ -168,85 +216,43 @@ router.post('/', async (req, res) => {
             conversation.title = message.slice(0, 32) + (message.length > 32 ? '…' : '');
         }
 
-        // Build full Ollama message history
-        const ollamaMessages = [
-            { role: 'system', content: buildSystemPrompt(level) },
-            ...conversation.messages.slice(-8).map(m => ({
-                role:    m.sender === 'user' ? 'user' : 'assistant',
-                content: m.content
-            })),
-            { role: 'user', content: message }
-        ];
+        const speaking = !!isSpeaking;
+        const { reply: aiReply, correction } = await askTutor(
+            targetModel, level, speaking ? [] : conversation.messages, message, { speaking, topic: speakingPrompt }
+        );
 
-        const result = await callOllama(targetModel, ollamaMessages);
-        let aiReply = (result.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-        if (!aiReply || aiReply.length < 4 || aiReply.startsWith('.)') || aiReply.startsWith('Option ')) {
-            aiReply = 'Das klingt spannend! Erzähl mir bitte mehr darüber. Was denkst du dazu?';
+        // Speaking drills are single-turn; only typed chat is kept as a conversation thread.
+        if (!speaking) {
+            conversation.messages.push({ sender: 'user', content: message });
+            conversation.messages.push({ sender: 'ai',   content: aiReply });
+            await conversation.save();
         }
 
-        // Persist both turns to MongoDB
-        conversation.messages.push({ sender: 'user', content: message  });
-        conversation.messages.push({ sender: 'ai',   content: aiReply  });
-        await conversation.save();
-
-        // Check if there was a correction
-        const corrMatch = aiReply.match(/^\[Correction:\s*([\s\S]*?)\]/i);
-        if (corrMatch) {
+        if (correction) {
             if (!user.recentMistakes) user.recentMistakes = [];
             user.recentMistakes.push({
-                error: message,
-                fix: corrMatch[1].trim(),
-                rule: 'Chat error',
-                source: isSpeaking ? 'speaking' : 'chat',
+                error: correction.original,
+                fix: correction.corrected,
+                rule: correction.explanation || 'Chat error',
+                source: speaking ? 'speaking' : 'chat',
                 timestamp: new Date()
             });
             if (user.recentMistakes.length > 25) user.recentMistakes = user.recentMistakes.slice(-25);
         }
 
-        // Update stats & XP
         user.totalMessages = (user.totalMessages || 0) + 1;
-        user.xp = (user.xp || 0) + 3;
-        user.lastActiveAt = new Date();
-
-        // Update daily module status
-        const dailyStatus = getOrCreateDailyStatus(user, todayStr);
-        if (isSpeaking) {
-            dailyStatus.speakingCount = (dailyStatus.speakingCount || 0) + 1;
-            if (dailyStatus.speakingCount >= 2) dailyStatus.speakingCompleted = true;
-        } else {
-            dailyStatus.chatCount = (dailyStatus.chatCount || 0) + 1;
-            if (dailyStatus.chatCount >= 3) dailyStatus.chatCompleted = true;
-        }
-
-        // Update study history
-        if (!user.studyHistory) user.studyHistory = [];
-        let hist = user.studyHistory.find(h => h.date === todayStr);
-        if (hist) {
-            hist.messagesSent = (hist.messagesSent || 0) + 1;
-            hist.xp = (hist.xp || 0) + 3;
-            hist.minutesSpent = (hist.minutesSpent || 0) + 1;
-        } else {
-            user.studyHistory.push({
-                date: todayStr,
-                xp: 3,
-                wordsLearned: 0,
-                messagesSent: 1,
-                essaysGraded: 0,
-                minutesSpent: 1
-            });
-        }
-
-        user.markModified('dailyModuleStatus');
-        user.markModified('studyHistory');
-        await checkAndAwardAchievements(user);
+        const bonus = correction ? [] : [{ label: 'Fehlerfrei!', xp: 2 }];
+        const progress = await awardActivity(user, speaking ? 'speaking_turn' : 'chat_message', { bonus });
         await user.save();
 
         res.json({
             reply: aiReply,
-            conversationId: conversation._id.toString(),
-            title: conversation.title,
-            ended: conversation.ended,
-            xpEarned: 3
+            correction,
+            conversationId: conversation?._id.toString() || null,
+            title: conversation?.title || '',
+            ended: conversation?.ended || false,
+            xpEarned: progress.xpGained,
+            progress
         });
 
     } catch (err) {
@@ -287,12 +293,10 @@ router.post('/end', async (req, res) => {
             conversation.summary = `Abgeschlossen: ${userMsgCount} Nachrichten, ${correctionsCount} Korrekturen geübt.`;
             await conversation.save();
 
-            // Award 10 completion XP to user
-            let user = await User.findOne({ userId });
-            if (user) {
-                user.xp = (user.xp || 0) + 10;
-                user.lastActiveAt = new Date();
-                await checkAndAwardAchievements(user);
+            let progress = null;
+            const user = await User.findOne({ userId });
+            if (user && userMsgCount > 0) {
+                progress = await awardActivity(user, 'chat_completed');
                 await user.save();
             }
 
@@ -304,9 +308,10 @@ router.post('/end', async (req, res) => {
                     userMessages: userMsgCount,
                     totalMessages: conversation.messages.length,
                     correctionsCount,
-                    xpEarned: 10,
+                    xpEarned: progress ? progress.xpGained : 0,
                     level: conversation.level
-                }
+                },
+                progress
             });
         } else {
             return res.json({
@@ -328,29 +333,8 @@ router.post('/end', async (req, res) => {
     }
 });
 
-// POST /api/chat/speaking-turn — track completed speaking session
-router.post('/speaking-turn', async (req, res) => {
-    try {
-        const { userId, level, minutes } = req.body;
-        if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
-        const todayStr = new Date().toISOString().split('T')[0];
-        let user = await User.findOne({ userId });
-        if (user) {
-            const dailyStatus = getOrCreateDailyStatus(user, todayStr);
-            dailyStatus.speakingCount = (dailyStatus.speakingCount || 0) + 1;
-            dailyStatus.speakingCompleted = true;
-            user.xp = (user.xp || 0) + 5;
-            user.lastActiveAt = new Date();
-            await checkAndAwardAchievements(user);
-            await user.save();
-        }
-
-        res.json({ success: true, xpEarned: 5 });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+// POST /api/chat/speaking-turn — legacy endpoint; speaking turns are now rewarded in POST /api/chat
+router.post('/speaking-turn', (_req, res) => res.json({ success: true, xpEarned: 0 }));
 
 // DELETE /api/chat/session/:id — delete a specific conversation session
 router.delete('/session/:id', async (req, res) => {

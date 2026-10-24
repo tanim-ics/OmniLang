@@ -5,15 +5,17 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "start": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" node src/server.js",
-    "dev": "CUDA_VISIBLE_DEVICES=\"0\" OLLAMA_FLASH_ATTENTION=\"1\" OLLAMA_NUM_PARALLEL=\"1\" OLLAMA_ORIGINS=\"*\" nodemon src/server.js",
+    "launch": "bash start.sh",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "setup": "bash setup.sh",
     "doctor": "node scripts/setup.js",
     "admin": "node scripts/admin.mjs",
     "test": "node tests/test_forgot_admin.mjs && node tests/test_admin_platform.mjs",
     "docker:check": "node scripts/docker-preflight.js",
     "docker:up": "node scripts/docker-preflight.js && docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "stop": "bash start.sh --stop"
   },
   "dependencies": {
     "cors": "^2.8.5",

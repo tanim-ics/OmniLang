@@ -2,6 +2,7 @@ import express from 'express';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import User from '../models/User.js';
 import Vocabulary from '../models/Vocabulary.js';
+import { localDateStr, levelInfo, refreshStreak, QUEST_TARGETS } from '../utils/game.js';
 
 // ---- OTP email sender (nodemailer when SMTP configured; console fallback for local dev) ----
 async function sendOtpEmail(toEmail, otp, nickname, purpose = 'verification') {
@@ -52,7 +53,7 @@ async function sendOtpEmail(toEmail, otp, nickname, purpose = 'verification') {
 const router = express.Router();
 
 // Helper: get or create today's daily module status
-export function getOrCreateDailyStatus(user, dateStr = new Date().toISOString().split('T')[0]) {
+export function getOrCreateDailyStatus(user, dateStr = localDateStr()) {
     if (!user.dailyModuleStatus) user.dailyModuleStatus = [];
     let todayStatus = user.dailyModuleStatus.find(s => s.date === dateStr);
     if (!todayStatus) {
@@ -149,7 +150,7 @@ router.get('/daily-status/:userId', async (req, res) => {
         }
 
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+        const todayStr = localDateStr(now);
         const dailyStatus = getOrCreateDailyStatus(user, todayStr);
 
         // Calculate exact time to midnight reset
@@ -174,9 +175,9 @@ router.get('/daily-status/:userId', async (req, res) => {
                 due: !dailyStatus.vocabCompleted,
                 completed: dailyStatus.vocabCompleted,
                 current: dailyStatus.vocabCount || 0,
-                target: 5,
+                target: QUEST_TARGETS.vocab,
                 unit: 'cards',
-                badge: dailyStatus.vocabCompleted ? '✓ Completed Today' : `${dueVocabCount > 0 ? dueVocabCount : 5} Cards Due`,
+                badge: dailyStatus.vocabCompleted ? '✓ Erledigt' : `${dailyStatus.vocabCount || 0}/${QUEST_TARGETS.vocab} · ${dueVocabCount} fällig`,
                 statusType: dailyStatus.vocabCompleted ? 'completed' : 'due',
                 icon: 'fa-layer-group'
             },
@@ -186,9 +187,9 @@ router.get('/daily-status/:userId', async (req, res) => {
                 due: !dailyStatus.chatCompleted,
                 completed: dailyStatus.chatCompleted,
                 current: dailyStatus.chatCount || 0,
-                target: 3,
+                target: QUEST_TARGETS.chat,
                 unit: 'messages',
-                badge: dailyStatus.chatCompleted ? '✓ Completed Today' : `Daily Chat Due (${dailyStatus.chatCount || 0}/3)`,
+                badge: dailyStatus.chatCompleted ? '✓ Erledigt' : `${dailyStatus.chatCount || 0}/${QUEST_TARGETS.chat} Nachrichten`,
                 statusType: dailyStatus.chatCompleted ? 'completed' : 'due',
                 icon: 'fa-comments'
             },
@@ -198,9 +199,9 @@ router.get('/daily-status/:userId', async (req, res) => {
                 due: !dailyStatus.speakingCompleted,
                 completed: dailyStatus.speakingCompleted,
                 current: dailyStatus.speakingCount || 0,
-                target: 2,
+                target: QUEST_TARGETS.speaking,
                 unit: 'turns',
-                badge: dailyStatus.speakingCompleted ? '✓ Completed Today' : `Speaking Due (${dailyStatus.speakingCount || 0}/2)`,
+                badge: dailyStatus.speakingCompleted ? '✓ Erledigt' : `${dailyStatus.speakingCount || 0}/${QUEST_TARGETS.speaking} Antworten`,
                 statusType: dailyStatus.speakingCompleted ? 'completed' : 'due',
                 icon: 'fa-microphone-lines'
             },
@@ -212,7 +213,7 @@ router.get('/daily-status/:userId', async (req, res) => {
                 current: dailyStatus.writingCount || 0,
                 target: 1,
                 unit: 'essay',
-                badge: dailyStatus.writingCompleted ? '✓ Graded Today' : 'Daily Essay Due',
+                badge: dailyStatus.writingCompleted ? '✓ Erledigt' : 'Heute fällig',
                 statusType: dailyStatus.writingCompleted ? 'completed' : 'due',
                 icon: 'fa-pen-nib'
             },
@@ -224,7 +225,7 @@ router.get('/daily-status/:userId', async (req, res) => {
                 current: dailyStatus.readingCount || 0,
                 target: 1,
                 unit: 'story',
-                badge: dailyStatus.readingCompleted ? '✓ Read Today' : 'Daily Story Due',
+                badge: dailyStatus.readingCompleted ? '✓ Erledigt' : 'Heute fällig',
                 statusType: dailyStatus.readingCompleted ? 'completed' : 'due',
                 icon: 'fa-book-open'
             }
@@ -245,11 +246,18 @@ router.get('/daily-status/:userId', async (req, res) => {
             await user.save();
         }
 
+        const todayHist = (user.studyHistory || []).find(h => h.date === todayStr) || {};
         res.json({
             today: todayStr,
+            todayXp: todayHist.xp || 0,
+            todayMinutes: Math.round(todayHist.minutesSpent || 0),
+            todayWords: todayHist.wordsLearned || 0,
+            dailyGoalXp: user.dailyGoalXp || 30,
+            dailyGoalMinutes: user.dailyGoalMinutes || 15,
+            streak: user.streak || 0,
             currentTimestamp: now.toISOString(),
-            timeFormatted: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            dateFormatted: now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+            timeFormatted: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+            dateFormatted: now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }),
             resetsIn: resetsInFormatted,
             secondsUntilReset: Math.floor(msUntilReset / 1000),
             modules,
@@ -296,8 +304,11 @@ function formatUserPayload(user, token = null) {
         email:             user.email || '',
         authProvider:      user.authProvider || 'local',
         currentLevel:      user.currentLevel || 'A2',
-        streak:            user.streak || 1,
+        streak:            user.streak || 0,
+        streakFreezes:     user.streakFreezes || 0,
+        bestCombo:         user.bestCombo || 0,
         xp:                user.xp || 0,
+        playerLevel:       levelInfo(user.xp || 0),
         totalWordsLearned: user.totalWordsLearned || 0,
         totalMessages:     user.totalMessages || 0,
         essaysGraded:      user.essaysGraded || 0,
@@ -351,7 +362,7 @@ router.post('/register', async (req, res) => {
         const { hash, salt } = hashPassword(password);
         const userId = 'u_' + randomBytes(6).toString('hex');
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = localDateStr(today);
 
         // Generate 6-digit OTP for email verification
         const otp = String(Math.floor(100000 + Math.random() * 900000));
@@ -374,7 +385,7 @@ router.post('/register', async (req, res) => {
             verificationExpiry: otpExpiry,
             currentLevel: userLevel,
             avatar: avatar || '🇩🇪',
-            streak: 1,
+            streak: 0,
             lastActiveAt: today,
             xp: 0,
             dailyGoalMinutes: 15,
@@ -563,7 +574,7 @@ router.post('/login', async (req, res) => {
         }
 
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = localDateStr(today);
 
         if (user) {
             // User exists — verify password if protected
@@ -591,15 +602,8 @@ router.post('/login', async (req, res) => {
                 user.passwordSalt = salt;
             }
 
-            // Streak tracking
-            const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : new Date();
-            const diffDays   = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 1) {
-                user.streak = (user.streak || 0) + 1;
-            } else if (diffDays > 1) {
-                user.streak = 1;
-            }
+            // Streaks grow from practice (see utils/game.js); login only settles missed days.
+            refreshStreak(user);
 
             // Ensure tanim user has superadmin role
             if ((user.nickname === 'tanim' || user.email === 'tanim.barca@gmail.com') && user.role !== 'superadmin') {
@@ -641,7 +645,7 @@ router.post('/social-login', async (req, res) => {
         }
 
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = localDateStr(today);
 
         if (!user) {
             const rawNick = (name || cleanEmail.split('@')[0] || (activeProvider === 'google' ? 'GoogleUser' : 'AppleUser')).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
@@ -657,7 +661,7 @@ router.post('/social-login', async (req, res) => {
                 authProvider: activeProvider,
                 currentLevel: 'A2',
                 avatar: avatar || (activeProvider === 'apple' ? '🍎' : '🦅'),
-                streak: 1,
+                streak: 0,
                 lastActiveAt: today,
                 xp: 50, // Welcome bonus
                 dailyGoalMinutes: 15,
@@ -676,11 +680,7 @@ router.post('/social-login', async (req, res) => {
             await checkAndAwardAchievements(user);
             await user.save();
         } else {
-            // Update activity & streak
-            const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : new Date();
-            const diffDays   = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
-            if (diffDays === 1) user.streak = (user.streak || 0) + 1;
-            else if (diffDays > 1) user.streak = 1;
+            refreshStreak(user);
 
             user.lastActiveAt = today;
             if (user.authProvider === 'guest') user.authProvider = activeProvider;
@@ -735,7 +735,7 @@ router.get('/profile/:userId', async (req, res) => {
                 username: 'Learner',
                 nickname: 'learner',
                 currentLevel: 'A2',
-                streak: 1,
+                streak: 0,
                 xp: 0,
                 avatar: '🇩🇪',
                 theme: 'dark-glass',
@@ -744,6 +744,10 @@ router.get('/profile/:userId', async (req, res) => {
             await checkAndAwardAchievements(user);
             await user.save();
         }
+
+        const streakBefore = user.streak;
+        refreshStreak(user);
+        if (user.streak !== streakBefore || user.isModified()) await user.save();
 
         const payload = formatUserPayload(user);
         res.json({
@@ -800,7 +804,7 @@ router.post('/reset-daily-modules', async (req, res) => {
         const { userId } = req.body;
         if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = localDateStr();
         const user = await User.findOne({ userId });
         if (user) {
             user.dailyModuleStatus = (user.dailyModuleStatus || []).filter(s => s.date !== todayStr);
@@ -878,7 +882,10 @@ router.post('/reset-progress', async (req, res) => {
             {
                 $set: {
                     xp: 0,
-                    streak: 1,
+                    streak: 0,
+                    lastStudyDate: '',
+                    streakFreezes: 0,
+                    bestCombo: 0,
                     totalWordsLearned: 0,
                     totalMessages: 0,
                     essaysGraded: 0,
@@ -888,7 +895,7 @@ router.post('/reset-progress', async (req, res) => {
                     recentMistakes: [],
                     achievements: [],
                     dailyModuleStatus: [],
-                    studyHistory: [{ date: new Date().toISOString().split('T')[0], xp: 0, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
+                    studyHistory: [{ date: localDateStr(), xp: 0, wordsLearned: 0, messagesSent: 0, essaysGraded: 0, minutesSpent: 0 }],
                     progressByLevel: {
                         A1: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
                         A2: { wordsLearned: 0, sessionsCount: 0, writingScore: 0, readingCount: 0 },
