@@ -1,6 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
-import { updateEnvModel, preloadModel, isOllamaReachable, ensureOllamaRunning, getOllamaTagsEndpoint } from '../utils/ollamaManager.js';
+import { updateEnvModel, preloadModel, isOllamaReachable, ensureOllamaRunning, getOllamaTagsEndpoint, getOllamaChatEndpoint } from '../utils/ollamaManager.js';
 
 const router = express.Router();
 
@@ -88,13 +88,15 @@ router.post('/test-model', async (req, res) => {
         const testModel = model || process.env.OLLAMA_MODEL || '';
         const start = Date.now();
 
-        const response = await fetch(OLLAMA_CHAT_ENDPOINT, {
+        const response = await fetch(getOllamaChatEndpoint(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: testModel,
                 messages: [{ role: 'user', content: 'Say "Bereit!" in one word.' }],
-                stream: false
+                stream: false,
+                think: false,
+                keep_alive: process.env.OLLAMA_KEEP_ALIVE || '1h'
             }),
             signal: AbortSignal.timeout(20000)
         });

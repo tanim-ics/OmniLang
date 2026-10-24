@@ -7,6 +7,10 @@
 #          ./start.sh --native   skip the question, run natively
 #          ./start.sh --docker   skip the question, run with Docker Compose
 #          ./start.sh --stop     stop everything OmniLang started
+#
+#  On every launch it lists the installed Ollama models and lets you switch
+#  (Enter keeps the current one). OMNILANG_MODEL=<name> ./start.sh picks one
+#  without asking.
 # ==============================================================================
 set -uo pipefail
 
@@ -175,18 +179,72 @@ ensure_ollama() {
     fi
     ok "Ollama is running $(ollama --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed 's/^/v/')"
 
-    local model; model="$(env_get OLLAMA_MODEL)"; model="${model:-$DEFAULT_MODEL}"
-    if curl -fs http://localhost:11434/api/tags | grep -q "\"name\":\"$model\""; then
-        ok "Model $model is installed"
-    else
-        warn "Model $model is not downloaded yet (about 7 GB for mistral-nemo:12b)."
-        if ask "Download it now?"; then
+    choose_model
+}
+
+# Installed chat models, one per line (embedding models can't chat, so they're left out).
+installed_models() {
+    curl -fs -m 5 http://localhost:11434/api/tags | grep -oE '"name":"[^"]+"' | cut -d'"' -f4 \
+        | grep -viE 'embed|bge-|minilm' || true
+}
+
+# Lists the installed models and saves the chosen one as OLLAMA_MODEL in .env.
+# Keeps the current model on Enter; picks automatically when there's no terminal.
+choose_model() {
+    local current models=() m i pick
+    current="$(env_get OLLAMA_MODEL)"
+    while IFS= read -r m; do [ -n "$m" ] && models+=("$m"); done < <(installed_models)
+
+    if [ ${#models[@]} -eq 0 ]; then
+        local model="${current:-$DEFAULT_MODEL}"
+        warn "No AI model is installed yet. Recommended: $model (about 7 GB for $DEFAULT_MODEL)."
+        if ask "Download $model now?"; then
             ollama pull "$model" || die "Model download failed"
+            env_set OLLAMA_MODEL "$model"
             ok "Model $model downloaded"
         else
-            warn "Continuing without it — AI features stay offline until you run: ollama pull $model"
+            warn "Continuing without a model — AI features stay offline until you run: ollama pull $model"
         fi
+        return
     fi
+
+    local installed=0
+    for m in "${models[@]}"; do [ "$m" = "$current" ] && installed=1; done
+
+    info "Installed models:"
+    for i in "${!models[@]}"; do
+        if [ "${models[$i]}" = "$current" ]; then
+            echo "      ${B}$((i + 1))) ${models[$i]}${R} ${GREEN}(current)${R}"
+        else
+            echo "      $((i + 1))) ${models[$i]}"
+        fi
+    done
+
+    pick=""
+    if [ $installed -eq 1 ]; then
+        if [ $IS_TTY -eq 1 ] && [ -z "${OMNILANG_MODEL:-}" ]; then
+            read -r -p "  ${B}?${R} Press Enter to keep $current, or type a number to switch: " pick
+        fi
+    else
+        [ -n "$current" ] && warn "The configured model $current is not installed."
+        if [ ${#models[@]} -gt 1 ] && [ $IS_TTY -eq 1 ] && [ -z "${OMNILANG_MODEL:-}" ]; then
+            read -r -p "  ${B}?${R} Which model should OmniLang use? [1] " pick
+        fi
+        pick="${pick:-1}"
+    fi
+    # OMNILANG_MODEL=<name> ./start.sh selects a model without asking.
+    if [ -n "${OMNILANG_MODEL:-}" ]; then
+        for i in "${!models[@]}"; do [ "${models[$i]}" = "$OMNILANG_MODEL" ] && pick=$((i + 1)); done
+        [ -z "$pick" ] && warn "OMNILANG_MODEL=$OMNILANG_MODEL is not installed — ignoring it"
+    fi
+
+    if [[ "$pick" =~ ^[0-9]+$ ]] && [ "$pick" -ge 1 ] && [ "$pick" -le ${#models[@]} ]; then
+        current="${models[$((pick - 1))]}"
+        env_set OLLAMA_MODEL "$current"
+    elif [ -n "$pick" ]; then
+        warn "\"$pick\" is not on the list — keeping ${current:-the current setting}"
+    fi
+    [ -n "$current" ] && ok "Using model $current (change it any time in Settings in the app)"
 }
 
 port_owner() { lsof -nP -iTCP:"$PORT" -sTCP:LISTEN 2>/dev/null | awk 'NR==2{print $1" (pid "$2")"}'; }
