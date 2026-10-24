@@ -282,6 +282,7 @@ tagen | verb | to meet, to be in session | Der Rat tagt jeden Montag. | The coun
 wiedersehen | verb | to see again | Ich hoffe, wir sehen uns bald wieder. | I hope we'll see each other again soon. | A2
 
 # --- Frequent adjectives with wrong senses -----------------------------------
+langweilig | adjective | boring | Der Film war sehr langweilig. | The film was very boring.
 gut | adjective | good, well | Das Essen ist sehr gut. | The food is very good.
 schön | adjective | beautiful, nice | Wir hatten einen schönen Urlaub. | We had a lovely holiday.
 fertig | adjective | ready, finished | Das Essen ist fertig! | Dinner is ready!
@@ -381,10 +382,13 @@ danke | word | thank you, thanks | Danke für deine Hilfe! | Thanks for your hel
 hallo | word | hello, hi | Hallo, wie geht's? | Hi, how are you?
 tschüss | word | bye | Tschüss, bis morgen! | Bye, see you tomorrow!
 
-# --- Removals (nominalised function words; the function word is listed instead) ---
+# --- Removals (nominalised function words, archaic or junk entries) ---
 - das Mehr
 - das Nichts
 - das Etwas
 - das Ja
 - das Nein
 - das Aber
+- das My
+- wesen
+- das Bravo

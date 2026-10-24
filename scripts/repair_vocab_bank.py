@@ -20,6 +20,9 @@ Stages (run in order, all by default):
                  with LLM-written sentences (validated to contain the headword) for
                  the most frequent entries. Template sentences that cannot be
                  replaced are dropped - the UI hides empty examples.
+  5. adverbs   - glosses adjectives that were listed in their adverb sense
+                 ("dringend = urgently") as adjectives ("urgent"). Runs last so the
+                 example cache (keyed by gloss) stays valid.
 
 Article+noun pairs ("das Haus") are never rewritten: genders come from the
 dictionary and src/routes/reading.js relies on them.
@@ -166,7 +169,7 @@ def prune_reason(entry, rank, en_freq, verbs, non_nouns, best_gloss_rank):
         return 'proper_name'
     if low in non_nouns and er > 20000:
         return 'rare_homograph_noun'
-    if best_gloss_rank.get(lemma, (None, 0))[0] not in (None, entry['word']) and er > 12000:
+    if best_gloss_rank.get(lemma, (None, 0))[0] not in (None, entry['word']) and er > 5000:
         return 'rare_gender_duplicate'
     return None
 
@@ -484,10 +487,48 @@ def stage_examples(bank, index, limit, batch_size=8):
 
 
 # ---------------------------------------------------------------------------
+# Stage 5: adjectives listed as adverbs
+# ---------------------------------------------------------------------------
+
+def adjective_from_ly(word, en_freq):
+    """urgently -> urgent, happily -> happy, probably -> probable, gently -> gentle."""
+    if not word.endswith('ly') or len(word) < 6:
+        return None
+    for cand in (word[:-2], word[:-3] + 'y', word[:-1] + 'e', word[:-2] + 'e'):
+        if cand in en_freq and en_freq[cand] < 30000:
+            return cand
+    return None
+
+
+# Suffixes that only form adjectives (-lich is left out: neulich, kürzlich are true adverbs)
+ADJECTIVE_SUFFIXES = ('isch', 'ig', 'bar', 'sam', 'haft', 'los')
+
+
+def stage_adverbs(bank, index, en_freq):
+    """
+    German adjectives double as adverbs, but the dictionary sense picked for many of them was the
+    adverb ("dringend = urgently"). A learner dictionary lists the adjective: when the word has an
+    adjective sense, gloss it as the adjective ("urgent") and type it 'adjective'.
+    """
+    for e in bank:
+        if e['type'] not in ('adverb', 'adjective') or e.get('_curated'):
+            continue
+        if e['type'] == 'adverb' and not e['word'].endswith(ADJECTIVE_SUFFIXES) \
+                and not any(s.pos == 'adjective' for s in index.get(e['word'], [])):
+            continue  # true adverbs ("sofort = immediately") keep their -ly gloss
+        parts = [p.strip() for p in e['translation'].split(',')]
+        adj = [adjective_from_ly(p, en_freq) if ' ' not in p else None for p in parts]
+        if all(adj) and ', '.join(dict.fromkeys(adj)) != e['translation']:
+            e['translation'] = ', '.join(dict.fromkeys(adj))
+            e['type'] = 'adjective'
+            stats['adverb_to_adjective'] += 1
+
+
+# ---------------------------------------------------------------------------
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--stages', default='curated,prune,glosses,examples')
+    ap.add_argument('--stages', default='curated,prune,glosses,examples,adverbs')
     ap.add_argument('--bank', default=BANK_PATH)
     ap.add_argument('--out')
     ap.add_argument('--gloss-limit', type=int)
@@ -509,7 +550,7 @@ def main():
         print('Stage 2: prune')
         removed = stage_prune(bank, en_freq)
     index = None
-    if 'glosses' in stages or 'examples' in stages:
+    if {'glosses', 'examples', 'adverbs'} & set(stages):
         print('Indexing dictionary senses ...')
         index = build_index({split_headword(e['word'])[1] for e in bank})
     if 'glosses' in stages:
@@ -518,6 +559,9 @@ def main():
     if 'examples' in stages:
         print('Stage 4: examples')
         stage_examples(bank, index, args.examples_limit)
+    if 'adverbs' in stages:
+        print('Stage 5: adjectives listed as adverbs')
+        stage_adverbs(bank, index, en_freq)
 
     # Curated additions sit at the front so they keep A1 ordering in the browser
     bank.sort(key=lambda e: 0 if e.get('_added') else 1)
