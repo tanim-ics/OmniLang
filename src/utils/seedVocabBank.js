@@ -22,19 +22,24 @@ const TEMPLATE_EXAMPLE = new RegExp('^(Hier ist (der|die|das) |Ich habe (der|die
 
 /**
  * Refreshes deck cards that were copied from an older bank version (SRS progress is untouched):
- *  - cards whose example is a template sentence ("Hier ist das Ich."), and
+ *  - cards whose example is a template sentence ("Hier ist das Ich.") or a sentence an earlier
+ *    bank shipped and has since replaced, and
  *  - cards whose translation is one an earlier bank shipped and has since corrected
  *    (src/data/vocabBankLegacyGlosses.json, e.g. "die Sängerin = songstress").
- * They get the current bank translation and example; when the word has left the bank,
- * only a template example is cleared.
+ * Stale fields get the current bank value; sentences the user collected themselves are kept.
+ * When the word has left the bank, only a template example is cleared.
  */
 export async function refreshDeckCardsFromBank({ log = console.log } = {}) {
     const legacy = existsSync(LEGACY_GLOSSES_PATH) ? JSON.parse(readFileSync(LEGACY_GLOSSES_PATH, 'utf-8')) : {};
+    const oldTranslations = legacy.translations || {};
+    const oldExamples = legacy.examples || {};
+    const legacyWords = [...new Set([...Object.keys(oldTranslations), ...Object.keys(oldExamples)])];
     const candidates = await Vocabulary.find({
-        $or: [{ example: TEMPLATE_EXAMPLE }, { word: { $in: Object.keys(legacy) } }]
+        $or: [{ example: TEMPLATE_EXAMPLE }, { word: { $in: legacyWords } }]
     }).select('word translation example').lean();
-    const stale = candidates.filter(c => TEMPLATE_EXAMPLE.test(c.example || '')
-        || (legacy[c.word] || []).includes(c.translation));
+    const staleExample = c => TEMPLATE_EXAMPLE.test(c.example || '') || (oldExamples[c.word] || []).includes(c.example);
+    const staleTranslation = c => (oldTranslations[c.word] || []).includes(c.translation);
+    const stale = candidates.filter(c => staleExample(c) || staleTranslation(c));
     if (!stale.length) return 0;
 
     const words = [...new Set(stale.map(c => c.word))];
@@ -42,14 +47,14 @@ export async function refreshDeckCardsFromBank({ log = console.log } = {}) {
     const ops = stale.map(card => {
         const b = bank.get(card.word);
         const templated = TEMPLATE_EXAMPLE.test(card.example || '');
-        let $set;
+        let $set = {};
         if (b) {
-            $set = { translation: b.translation };
-            if (templated || !card.example) {
+            if (staleTranslation(card)) $set.translation = b.translation;
+            if (staleExample(card) || !card.example) {
                 Object.assign($set, { example: b.example || '', sourceText: b.exampleEn || b.topic || 'Vocab Bank' });
             }
-        } else {
-            $set = templated ? { example: '', sourceText: '' } : {};
+        } else if (templated) {
+            $set = { example: '', sourceText: '' };
         }
         return { updateOne: { filter: { _id: card._id }, update: { $set } } };
     }).filter(op => Object.keys(op.updateOne.update.$set).length);
